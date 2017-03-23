@@ -78,8 +78,9 @@
         collectDatafromActions: function(element) {
           // collect action
           var actions = element.find(".actions").first();
-          var act = {};
+          var acts = [];
           actions.children().each(function() {
+            var act = {};
             if ($(this).is(".form-group")) {
                 act["name"] = $(this).find(".func_name").val();
                 var params = {};
@@ -89,9 +90,10 @@
                     params[param_name_a[i].innerText.slice(0,-1)] = param_val_a[i].value;
                 }
                 act["params"] = params
+                acts.push(act);
             }
           });
-          return act;
+          return acts;
         },
 
         collectDataFromNode: function(element) {
@@ -493,11 +495,11 @@
             var output;
             switch(bucket["indicator"]) {
                 case "any":
-                    all_a.push(any_a);
+                    all_a.push({"any":any_a});
                     output = {"all": all_a};
                     break;
                 case "all":
-                    any_a.push(all_a);
+                    any_a.push({"all":all_a});
                     output = {"any": any_a};
                     break;
             }

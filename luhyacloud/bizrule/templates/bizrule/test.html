@@ -8,6 +8,13 @@
 <div id="variables"   style="display: none;">{{ variables }}</div>
 <div id="rules"       style="display: none;">{{ rules }}</div>
 <div id="images"      style="display: none;">{{ images }}</div>
+<p></p>
+<div class="alert alert-success" style="display: none">
+      {% trans "New Rules are submitted Successfully." %}
+</div>
+<div class="alert alert-danger" style="display: none">
+      {% trans "Submitting rules Failed, try again." %}
+</div>
 {% endblock %}
 
 {% block myjs %}
@@ -39,10 +46,30 @@
             rules.push(rule);
         });
         console.log(JSON.stringify(rules));
+        url = "/bizrule/postlogin/rule/submit";
+            postdata = {
+                rule_type:         "postlogin",
+                rule_array:         JSON.stringify(rules),
+            }
+            $.post(url, postdata, function(data) {
+                var items = [];
+                $.each(data, function (key, val) {
+                    items[key] = val;
+                });
+                if (items['Result'] == "OK") {
+                    $('.alert-success').css('display', 'block');
+                    $('.alert-danger').css( 'display', 'none');
+                    $('.btn').addClass('disabled');
+                } else {
+                    $('.alert-success').css('display', 'none');
+                    $('.alert-danger').text(items['errormsg']);
+                    $('.alert-danger').css( 'display', 'block');
+                }
+            });
     });
 
     $(document).ready(function() {
-        var _rules     = JSON.parse($("#rules").text());
+        var _rules     = JSON.parse(JSON.parse($("#rules").text()));
         var _variables = JSON.parse($("#variables").text());
 
         for (var i=0; i<_rules.length; i++) {

@@ -3,6 +3,7 @@ import time, json
 from business_rules.variables import *
 from business_rules.actions import *
 from business_rules.operators import *
+from models import *
 
 ex_user = {
     "name":         "thomas",
@@ -62,85 +63,93 @@ class postloginActions(BaseActions):
     @rule_action(params={"tp": FIELD_SELECT, "pt": FIELD_SELECT})
     def test_action(self, tp, pt):
         pass
+#
+# def postlogin_get_rules():
+#     rules = [
+#         {
+#             # group name == "" and day == "" and time == ""
+#             "conditions":
+#             { "all":
+#                 [
+#                     {
+#                         "name": "login_time_of_day",
+#                         "operator": "equal_to",
+#                         "value": "Sat"
+#                     },
+#                     {
+#                         "name": "login_time_of_hour",
+#                         "operator": "greater_than",
+#                         "value": 900,
+#                     },
+#                     {
+#                         "name": "login_time_of_hour",
+#                         "operator": "less_than",
+#                         "value": 1000,
+#                     },
+#                     {"any": [
+#                         {
+#                             "name": "login_user_group",
+#                             "operator": "contains",
+#                             "value": "dong"
+#                         },
+#                         {
+#                             "name": "login_time_of_hour",
+#                             "operator": "less_than",
+#                             "value": 1000,
+#                         },
+#                     ]},
+#                 ]
+#             },
+#             "actions":
+#                 [
+#                     {
+#                         "name":     "set_image",
+#                         "params":   {"image": "xp"}
+#                     }
+#                 ],
+#         },
+#         {
+#             # group name == "" and day == "" and time == ""
+#             "conditions":
+#                 {"all": [
+#                     {
+#                         "name": "login_user_group",
+#                         "operator": "contains",
+#                         "value": "zhan"
+#                     },
+#                     {
+#                         "name": "login_time_of_day",
+#                         "operator": "equal_to",
+#                         "value": "Sat"
+#                     },
+#                     {
+#                         "name": "login_time_of_hour",
+#                         "operator": "greater_than",
+#                         "value": 1700,
+#                     },
+#                     {
+#                         "name": "login_time_of_hour",
+#                         "operator": "less_than",
+#                         "value": 1900,
+#                     },
+#                 ]},
+#             "actions": [
+#                 {
+#                     "name": "set_image",
+#                     "params": {"image": "win7"},
+#                 }
+#             ],
+#         },
+#     ]
+#     return json.dumps(rules)
 
 def postlogin_get_rules():
-    rules = [
-        {
-            # group name == "" and day == "" and time == ""
-            "conditions":
-            { "all":
-                [
-                    {
-                        "name": "login_time_of_day",
-                        "operator": "equal_to",
-                        "value": "Sat"
-                    },
-                    {
-                        "name": "login_time_of_hour",
-                        "operator": "greater_than",
-                        "value": 900,
-                    },
-                    {
-                        "name": "login_time_of_hour",
-                        "operator": "less_than",
-                        "value": 1000,
-                    },
-                    {"any": [
-                        {
-                            "name": "login_user_group",
-                            "operator": "contains",
-                            "value": "dong"
-                        },
-                        {
-                            "name": "login_time_of_hour",
-                            "operator": "less_than",
-                            "value": 1000,
-                        },
-                    ]},
-                ]
-            },
-            "actions":
-                [
-                    {
-                        "name":     "set_image",
-                        "params":   {"image": "xp"}
-                    }
-                ],
-        },
-        {
-            # group name == "" and day == "" and time == ""
-            "conditions":
-                {"all": [
-                    {
-                        "name": "login_user_group",
-                        "operator": "contains",
-                        "value": "zhan"
-                    },
-                    {
-                        "name": "login_time_of_day",
-                        "operator": "equal_to",
-                        "value": "Sat"
-                    },
-                    {
-                        "name": "login_time_of_hour",
-                        "operator": "greater_than",
-                        "value": 1700,
-                    },
-                    {
-                        "name": "login_time_of_hour",
-                        "operator": "less_than",
-                        "value": 1900,
-                    },
-                ]},
-            "actions": [
-                {
-                    "name": "set_image",
-                    "params": {"image": "win7"},
-                }
-            ],
-        },
-    ]
-    return json.dumps(rules)
+    recs = bizRule.objects.filter(rule_name="postlogin")
+    if recs.count() > 0:
+        rec = bizRule.objects.get(rule_name="postlogin")
+        return json.dumps(rec.rule_array)
+    else:
+        return []
 
 def postlogin_get_variables():
     from business_rules import export_rule_data

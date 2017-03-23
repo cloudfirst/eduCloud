@@ -6,7 +6,10 @@ urlpatterns = patterns('',
 
     # API 1.0
     # this is a POST requtst, all data in POST section
-    url(r'^postlogin$', views.postlogin_rule_show,          name='postlogin_rule_show'),
+    url(r'^postlogin$',                 views.postlogin_rule_show,          name='postlogin_rule_show'),
+    url(r'^postlogin/rule/submit$',     views.postlogin_rule_submit,        name='postlogin_rule_submit'),
+
+
     url(r'^schedule$',  views.vm_schedule_rule_show,        name='vm_schedule_rule_show'),
     url(r'^aim$',       views.vm_ip_rule_show,              name='vm_ip_rule_show'),
 

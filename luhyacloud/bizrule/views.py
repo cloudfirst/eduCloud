@@ -1,9 +1,11 @@
 from django.shortcuts import render
+from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import ugettext as _
 from django.contrib.auth.models import User
 from clc.models import *
+from models import *
 
 import json
 import random, pickle, pexpect, os, base64, shutil, time, datetime
@@ -45,6 +47,27 @@ def postlogin_rule_show(request):
     }
 
     return render(request, 'bizrule/test.html', context)
+
+
+def postlogin_rule_submit(request):
+    rule_type  = request.POST['rule_type']
+    rule_array = request.POST['rule_array']
+    recs = bizRule.objects.filter(rule_name=rule_type)
+    if recs.count() > 0: # update exist record
+        rec = bizRule.objects.get(rule_name=rule_type)
+        rec.rule_array = rule_array
+        rec.save()
+    else:  # add new record
+        rec = bizRule(
+            rule_name=rule_type,
+            rule_array=rule_array,
+        )
+        rec.save()
+
+    response = {}
+    response['Result'] = 'OK'
+    retvalue = json.dumps(response)
+    return HttpResponse(retvalue, content_type="application/json")
 
 @login_required(login_url='/portal/admlogin')
 def vm_schedule_rule_show(request):
