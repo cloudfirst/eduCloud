@@ -41,3 +41,8 @@ if os.path.exists("/etc/educloud/modules/virtapp") == True:
     urlpatterns += patterns('',
         url(r'^virtapp/',       include('virtapp.urls')),
     )
+
+if os.path.exists("/etc/educloud/modules/bizrule") == True:
+    urlpatterns += patterns('',
+        url(r'^bizrule/',       include('bizrule.urls')),
+    )

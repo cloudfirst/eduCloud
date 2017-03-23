@@ -1,0 +1,53 @@
+{% extends "clc/clctemplate.html" %}
+{% load i18n %}
+{% load staticfiles %}
+
+{% block content %}
+<button id="mysubmit" type="submit" class="btn btn-primary">{% trans "Submit Button" %}</button>
+<button id="add"      class="btn btn-default">{% trans "Add Rule" %}</button>
+<div id="variables"   style="display: none;">{{ variables }}</div>
+<div id="rules"       style="display: none;">{{ rules }}</div>
+<div id="images"      style="display: none;">{{ images }}</div>
+{% endblock %}
+
+{% block myjs %}
+<link  href="{% static "bizrule/css/demo.css" %}" rel="stylesheet">
+<script src="{% static "bizrule/js/rule-builder.js" %}"></script>
+<script>
+    function build_a_rule(vars, rule) {
+        var _images = JSON.parse($("#images").text());
+        var newdiv = $("<div>", {"class": "newrule"});
+        $("#mysubmit").before(newdiv);
+        var options = {
+           "variables" : vars,
+           "rule"      : rule,
+           "images"    : _images,
+        }
+        var rb = newdiv.ruleBuilder(options);
+    }
+
+    $("#add").click(function(e) {
+        var _variables = JSON.parse($("#variables").text())
+        build_a_rule(_variables, null);
+    });
+
+    $("#mysubmit").click(function(e) {
+        var rules = [];
+        $(".newrule").each(function(){
+            var $this = $(this);
+            var rule = $this.ruleBuilder("data");
+            rules.push(rule);
+        });
+        console.log(JSON.stringify(rules));
+    });
+
+    $(document).ready(function() {
+        var _rules     = JSON.parse($("#rules").text());
+        var _variables = JSON.parse($("#variables").text());
+
+        for (var i=0; i<_rules.length; i++) {
+            build_a_rule(_variables, _rules[i]);
+        }
+    });
+</script>
+{% endblock %}

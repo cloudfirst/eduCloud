@@ -127,6 +127,22 @@ install:
 	cp -r $(CURDIR)/luhyacloud/virtapp/templates             $(WEB_VIRTAPP)/usr/local/www/virtapp/
 	cp -r $(CURDIR)/luhyacloud/virtapp/sql                   $(WEB_VIRTAPP)/usr/local/www/virtapp/
 
+	######################
+	#     WEB_BIZRULE    #
+	######################
+	install -d $(WEB_BIZRULE)/etc/educloud/modules
+	touch $(WEB_BIZRULE)/etc/educloud/modules/bizrule
+
+	install -d $(WEB_BIZRULE)/usr/local/www/bizrule
+	python -m compileall $(CURDIR)/luhyacloud/bizrule/
+	mv $(CURDIR)/luhyacloud/bizrule/*.pyc                    $(WEB_BIZRULE)/usr/local/www/bizrule/
+	#cp $(CURDIR)/luhyacloud/bizrule/*.py                    $(WEB_BIZRULE)/usr/local/www/bizrule/
+
+	cp -r $(CURDIR)/luhyacloud/bizrule/conf                  $(WEB_BIZRULE)/usr/local/www/bizrule/
+	cp -r $(CURDIR)/luhyacloud/bizrule/templates             $(WEB_BIZRULE)/usr/local/www/bizrule/
+	cp -r $(CURDIR)/luhyacloud/bizrule/static                $(WEB_BIZRULE)/usr/local/www/bizrule/
+	#cp -r $(CURDIR)/luhyacloud/bizrule/sql                   $(WEB_BIZRULE)/usr/local/www/bizrule/
+
 	##################################################
 	# when use pyinstaller to compile exeutable file,
 	# you must set dpkg-buildflags to avoid strip.
@@ -193,17 +209,3 @@ install:
 	install -d $(DAEMON_NC)/usr/local/bin
 	cd $(CURDIR)/webconfig/serverTools/ && sudo -u luhya pyinstaller recoverVMfromCrash.py -F -s
 	cp $(CURDIR)/webconfig/serverTools/dist/recoverVMfromCrash             $(DAEMON_NC)/usr/local/bin/
-
-	####################
-	#     DAEMON_TNC   #
-	####################
-	install -d $(DAEMON_TNC)/etc/educloud/modules
-	touch $(DAEMON_TNC)/etc/educloud/modules/core
-
-	install -d $(DAEMON_TNC)/usr/local/nodedaemon/
-
-	cd $(CURDIR)/nodeDaemon/tnc && sudo -u luhya pyinstaller tnc_daemon.py -F -s
-	cp $(CURDIR)/nodeDaemon/tnc/dist/tnc_daemon            $(DAEMON_TNC)/usr/local/nodedaemon/tnc
-
-	install -d $(DAEMON_TNC)/usr/local/bin/
-	cp $(CURDIR)/webconfig/scripts/nodedaemon-tnc          $(DAEMON_TNC)/usr/local/bin

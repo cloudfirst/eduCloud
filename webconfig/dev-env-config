@@ -103,5 +103,88 @@ Solution 2: clc query the IP and MAC by account ( ask for CC, whatever implement
 
 CC property:
 I not bind between account/IP(DHCP)/MAC(random)
+    ACMBinging = 0
+    - random gen MAC, and{ tid, mac}
 II binding IP(static)/MAC(random)
+    ACMBinding = 1
+    - random gen MAC, and {tid, IP, MAC}
 II binding account/IP/MAC
+    ACMBinding = 2
+    - prepae {account, IP, MAC}
+    - and {tid, {a, ip, mac}}
+
+reference :
+class ecCCResources(models.Model):
+    ccmac0              = models.CharField(max_length=20)
+    ccname              = models.CharField(max_length=100)
+    cc_usage            = models.CharField(max_length=20) #lvd, rvd, vss, app
+
+    # below are necessary for vds
+    rdp_port_pool_def   = models.CharField(max_length=100) # port1-port2
+    rdp_port_pool_list  = models.TextField()  # [port1, port2, port3, ... ... ]
+    used_rdp_ports      = models.TextField()  # [port1, port2, ports, ... ... ]
+
+    network_mode        = models.CharField(max_length=20) # default = flat, or tree
+
+    # valid only if usage is vs, app
+    dhcp_service        = models.CharField(max_length=20) # default = public, or private
+    # valid only if dhcp service is private and cc_usage is vs, or app
+    dhcp_pool_def       = models.CharField(max_length=100) # port1-port2
+    dhcp_interface      = models.CharField(max_length=20)  # default is cc's eth0
+
+    # valid only if network_mode is tree and cc_usage is vs, app
+    # all these pub ip will be configured on cc's network card, say eth0.0, eth0.1, etc
+    # and followed by iptable rule to redirect traffic on this interface to nc's vm's web_ip
+    pub_ip_pool_def   = models.CharField(max_length=100)
+    pub_ip_pool_list  = models.TextField()
+    used_pub_ip       = models.TextField()
+
+    #valid account, ip, mac bingding for rvd
+    ACMBinging = 0, 1, 2
+
+
+
+
+
+    ================================================================
+
+    binding type = 0 : random gen MAC, and{ tid, mac}
+        account  = active user
+        ipaddr   = DHCP - NAT/Bridge
+        mac      = random generated
+        tid      = TMPxxxx, VDxxxx, PVDxxx
+    dynamically insert/delete record when power on/off
+
+    binding type = 1 : random gen MAC, and {tid, IP, MAC}
+        acount   = active user
+        ipaddr   = randomly selected from IP pool
+        mac      = randomly selected from mac pool
+        tid      = TMPxxx, VDxxx, PVDxxx
+    dynamicall insert/delete record when power on/off
+
+    binding type = 2 : {tid, {a, ip, mac}}
+        account  = active user
+        ipaddr   = select IP by account
+        mac      = select IP by account
+        tid      = TMPxxx, VDxxx, PVDxxx
+
+    type 0 : no need pool  or a  service return a mac without any input
+    type 1 : need a pool (IP, MAC) or a service return {IP, MAC} without any input
+    type 2 : need a pool (account, IP, MAC) or a service {IP, MAC} with input account
+
+    process description:
+    =======================================
+    when cc/nc is selected, clc will generate the runtime_option for this instance.
+    based on cc's ACMBingind property
+    0: clc will call the service of this cc to get new mac address and store mac in tid
+    1: clc will call the service of this cc to get {IP, MAC} pair and store mac in tid
+    2: clc will call the service of this cc to get {IP, MAC} pair by account and store mac in tid
+
+    implememtation
+    ===============================================
+    design a new django app say busirule, to handle all above process
+    1. account/ip/mac setting rule before running vm
+    2. images filtering rule before display
+    3. ... ...
+
+

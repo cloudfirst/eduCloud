@@ -57,6 +57,13 @@ if os.path.exists("/etc/educloud/modules/cc") == True:
         'cc',
     )
 
+if os.path.exists("/etc/educloud/modules/bizrule") == True:
+    logger.error('/etc/educloud/modules/bizrule Exist ..')
+    INSTALLED_APPS += (
+        'bizrule',
+    )
+
+
 logger.error('TEMPLATE_DIRS     = %s' % TEMPLATE_DIRS)
 logger.error('INSTALLED_APPS    = %s' % str(INSTALLED_APPS))
 logger.error('STATICFILES_DIRS  = %s' % str(STATICFILES_DIRS))
