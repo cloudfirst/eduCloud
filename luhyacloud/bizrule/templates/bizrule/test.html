@@ -69,11 +69,13 @@
     });
 
     $(document).ready(function() {
-        var _rules     = JSON.parse(JSON.parse($("#rules").text()));
         var _variables = JSON.parse($("#variables").text());
-
-        for (var i=0; i<_rules.length; i++) {
-            build_a_rule(_variables, _rules[i]);
+        var _rules     = $("#rules").text();
+        if (_rules != "[]") {
+            _rules = JSON.parse(_rules);
+            for (var i=0; i<_rules.length; i++) {
+                  build_a_rule(_variables, _rules[i]);
+            }
         }
     });
 </script>

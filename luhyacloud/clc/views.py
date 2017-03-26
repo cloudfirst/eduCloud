@@ -310,6 +310,22 @@ NC_DETAIL_TEMPLATE = \
 }
 '''
 
+def askBizRuleforResult(clcip, type_rule, payload):
+    result = []
+
+    if DAEMON_DEBUG == True:
+        url = "http://%s:8000/bizrule/%s/rule/run" % (clcip, type_rule)
+    else:
+        url = "http://%s:8000/bizrule/%s/rule/run" % (clcip, type_rule)
+
+    try:
+        r = requests.post(url, data=payload)
+        result = json.loads(r.content)
+    except Exception as e:
+        logger.error("askBizRuleforResult call with exception = %s" % str(e))
+
+    return result
+
 def getPhyServerStatusFromMC(stype, mac):
     payload = None
     mc = memcache.Client(['127.0.0.1:11211'], debug=0)
@@ -5638,9 +5654,30 @@ def list_myvds(request):
         response['vapp'] = []
     logger.error("user %s own virtual app as below: %s" %(_user, response['vapp']))
 
+    # call bizrule to filter displayed vms.
+    if os.path.exists("/etc/educloud/modules/bizrule") == True:
+        payload = {
+            "name" : ua.showname,
+            "group": ua.ec_authpath_name,
+            "loc"  : "",
+            "image_list" : json.dumps([]),
+        }
+        result = askBizRuleforResult("localhost", "postlogin", payload)
+        if result["Result"] == "OK" and result['triggered']  == True:
+            new_vds_list = result['data']["image_list"]
+            new_vds_array = []
+            for vd in vds:
+                if vd["name"] in new_vds_list:
+                    new_vds_array.append(vd)
+            response['data'] = new_vds_array
+            logger.error("after bizrule, user %s trigger the rule and new vms is: %s" % (_user, new_vds_array))
+        elif result["Result"] == "FAIL":
+            logger.error("after bizrule, user %s error reported as %s" % (_user, result['reason']))
+        else:
+            logger.error("after bizrule, user %s not trigger the rule." % (_user))
+
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
-
 
 def rvd_start(request, srcid, dstid, insid):
     _skey = request.POST['sid']

@@ -160,5 +160,3 @@ def getVMStatus(clcip, tid):
     r = requests.get(url)
     logger.error(r.content)
     return json.loads(r.content)
-
-

@@ -32,6 +32,9 @@ def get_all_images():
 
     return json.dumps(image_list)
 
+###############################################
+# POST LOGIN RULE handles
+##############################################
 @login_required(login_url='/portal/admlogin')
 def postlogin_rule_show(request):
     u = User.objects.get(username=request.user)
@@ -42,7 +45,7 @@ def postlogin_rule_show(request):
         'showname': ua.showname,
         'dashboard' : _("PostLogin Rules"),
         'variables' : postlogin_get_variables(),
-        'rules' :  postlogin_get_rules(),
+        'rules' :  json.dumps(postlogin_get_rules()),
         'images':  get_all_images(),
     }
 
@@ -69,10 +72,52 @@ def postlogin_rule_submit(request):
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
 
+def postlogin_rule_run(request):
+    response = {}
+    try:
+        rule = bizRule.objects.get(rule_name="postlogin")
+        if len(rule.rule_array) > 0:
+            user = {}
+            user["name"] = request.POST["name"]
+            user["loc"] = request.POST["loc"]
+            user["group"] = request.POST["group"]
+            user["image_list"] = json.loads(request.POST["image_list"])
+            triggered, result = postlogin_run(user)
+            response['Result'] = 'OK'
+            response["triggered"] = triggered
+            response["data"] = result
+    except Exception as e:
+        response['Result'] = 'FAIL'
+        response['reason'] = str(e)
+
+    retvalue = json.dumps(response)
+    return HttpResponse(retvalue, content_type="application/json")
+
+
+###############################################
+# VM SCHEDULE RULE handles
+##############################################
 @login_required(login_url='/portal/admlogin')
 def vm_schedule_rule_show(request):
     pass
 
+def vm_schedule_rule_submit(request):
+    pass
+
+def vm_schedule_rule_run(requet):
+    pass
+
+###############################################
+# IP-MAC TABLE RULE handles
+##############################################
 @login_required(login_url='/portal/admlogin')
 def vm_ip_rule_show(request):
     pass
+
+def vm_ip_rule_submit(request):
+    pass
+
+def vm_ip_rule_run(request):
+    pass
+
+
