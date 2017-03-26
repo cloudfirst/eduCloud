@@ -162,7 +162,7 @@ def main(argv):
     ##############################################################################
     # 7. install educloud in one machine by apt-get
     ##############################################################################
-    cmd_line = 'sudo apt-get -y install educloud-portal nodedaemon-clc nodedaemon-walrus nodedaemon-cc educloud-virtapp'
+    cmd_line = 'sudo apt-get -y install educloud-portal nodedaemon-clc nodedaemon-walrus nodedaemon-cc educloud-virtapp educloud-bizrule'
     os.system(cmd_line)
 
     if HYPERVISOR == "ndp":

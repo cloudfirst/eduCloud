@@ -111,29 +111,29 @@
           var div_row   = $("<div>", {"class": "row" });
           var div_clo   = $("<div>", {"class": "col-lg-12"});
           var div_panel = $("<div>", {"class": "panel panel-default"});
-          var div_head  = $("<div>", {"class": "panel-heading", "text":"Conditions"});
+          var div_head  = $("<div>", {"class": "panel-heading", "text":"触发规则需满足的条件"});
           var div_body  = $("<div>", {"class": "panel-body conditions"});
           var conds = this.rule == null ? null : this.rule["conditions"];
           this.create_conditions(div_body, conds);
-          var div_footer= $("<div>", {"class": "panel-footer", "text":"Actions"});
+          var div_footer= $("<div>", {"class": "panel-footer", "text":"触发规则后执行的动作"});
           var div_action= $("<div>", {"class": "panel-body actions"});
           div_action.append(this.create_actions());
 
           var div_right = $("<div>", {"class": "pull-right"});
-          var btn_link_add = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"Add Condition"});
+          var btn_link_add = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"添加新条件"});
           btn_link_add.click(function(e){
                 e.preventDefault();
                 var new_condition = _this.create_condition("and", null);
                 div_body.append(new_condition);
           });
 
-          var btn_link_sub_add = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"Add Sub Condition"});
+          var btn_link_sub_add = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"添加子条件"});
           btn_link_sub_add.click(function(e){
                 e.preventDefault();
                 var new_sub_condition = _this.create_sub_condition(null);
                 div_body.append(new_sub_condition);
           });
-          var btn_link_rm  = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"Remove"});
+          var btn_link_rm  = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"删除"});
           btn_link_rm.click(function(e) {
                 e.preventDefault();
                 div_row.parent().remove();
@@ -213,7 +213,7 @@
             select_name.change();
 
             var select_andor= this.create_andor_select(andor);
-            var btn_link_rm  = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"Remove"});
+            var btn_link_rm  = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"删除"});
             btn_link_rm.click(function(e) {
                 e.preventDefault();
                 form_group.remove();
@@ -233,7 +233,7 @@
                 inner_andor = converAllAny2AndOr(andor_key[0])
             }
             var div_panel = $("<div>", {"class": "panel panel-default"});
-            var div_head  = $("<div>", {"class": "panel-heading", "text":"Conditions"});
+            var div_head  = $("<div>", {"class": "panel-heading", "text":"子条件"});
             var div_body  = $("<div>", {"class": "panel-body conditions"});
             this.create_conditions(div_body, rule)
             var div_footer= $("<div>", {"class": "panel-footer"});
@@ -242,19 +242,19 @@
             div_footer.append(select_andor);
 
             var div_right = $("<div>", {"class": "pull-right"});
-            var btn_link_add = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"Add Condition"});
+            var btn_link_add = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"添加新条件"});
             btn_link_add.click(function(e){
                 e.preventDefault();
                 var new_condition = _this.create_condition(inner_andor, null);
                 div_body.append(new_condition);
             });
-            var btn_link_sub_add = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"Add Sub Condition"});
+            var btn_link_sub_add = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"添加子条件"});
             btn_link_sub_add.click(function(e){
                 e.preventDefault();
                 var new_sub_condition = _this.create_sub_condition(inner_andor, null);
                 div_body.append(new_sub_condition);
             });
-            var btn_link_rm  = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"Remove"});
+            var btn_link_rm  = $("<div>", {"class": "btn btn-link btn-xs", "type":"button", "text":"删除"});
             btn_link_rm.click(function(e) {
                 e.preventDefault();
                 div_panel.remove();

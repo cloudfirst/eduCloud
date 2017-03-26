@@ -12,6 +12,7 @@ WEB_CLC         =debian/educloud-clc
 WEB_WALRUS      =debian/educloud-walrus
 WEB_CC          =debian/educloud-cc
 WEB_VIRTAPP     =debian/educloud-virtapp
+WEB_BIZRULE     =debian/educloud-bizrule
 
 DAEMON_CLC      =debian/nodedaemon-clc
 DAEMON_WALRUS   =debian/nodedaemon-walrus
@@ -141,7 +142,7 @@ install:
 	cp -r $(CURDIR)/luhyacloud/bizrule/conf                  $(WEB_BIZRULE)/usr/local/www/bizrule/
 	cp -r $(CURDIR)/luhyacloud/bizrule/templates             $(WEB_BIZRULE)/usr/local/www/bizrule/
 	cp -r $(CURDIR)/luhyacloud/bizrule/static                $(WEB_BIZRULE)/usr/local/www/bizrule/
-	#cp -r $(CURDIR)/luhyacloud/bizrule/sql                   $(WEB_BIZRULE)/usr/local/www/bizrule/
+	cp -r $(CURDIR)/luhyacloud/bizrule/sql                   $(WEB_BIZRULE)/usr/local/www/bizrule/
 
 	##################################################
 	# when use pyinstaller to compile exeutable file,

@@ -1,0 +1,1 @@
+alter table bizrule_bizrule convert to character set utf8;

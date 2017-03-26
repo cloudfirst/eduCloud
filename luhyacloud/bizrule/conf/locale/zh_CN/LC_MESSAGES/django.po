@@ -1,0 +1,33 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-03-26 07:09+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: views.py:46
+msgid "PostLogin Rules"
+msgstr "登录后规则"
+
+#: templates/bizrule/test.html:7
+msgid "Add Rule"
+msgstr "添加新规则"
+
+#: templates/bizrule/test.html:13
+msgid "New Rules are submitted Successfully."
+msgstr "新规则提交成功！"
+
+#: templates/bizrule/test.html:16
+msgid "Submitting rules Failed, try again."
+msgstr "新规则提交失败！"
