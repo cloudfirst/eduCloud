@@ -657,12 +657,12 @@ class runImageTaskThread(multiprocessing.Process):
                     # in servere side, each VM has 4G mem
                     _cpus    = self.runtime_option['cpus']
                     _memory  = self.runtime_option['memory'] * 1024
-                    if self.runtime_option['usage'] == 'desktop':
-                        _network_para = " --nic1 nat  --nictype1 %s " % self.runtime_option['networkcards'][0]['nic_type']
-                        if self.runtime_option['usb_enabled'] == 1:
-                            _network_para = " --nic1 bridged --bridgeadapter1 %s --nictype1 %s " % (bridged_ifs[0], self.runtime_option['networkcards'][0]['nic_type'])
+
+                    if self.runtime_option["nic_mode"] == "bridge"  or self.runtime_option['usb_enabled'] == 1:
+                        _network_para = " --nic1 bridged --bridgeadapter1 %s --nictype1 %s --macaddress1 %s" % (bridged_ifs[0], self.runtime_option['networkcards'][0]['nic_type'],self.runtime_option['networkcards'][0]['nic_mac'])
                     else:
-                        _network_para = " --nic1 bridged --bridgeadapter1 %s --nictype1 %s --macaddress1 %s" % (bridged_ifs[0], self.runtime_option['networkcards'][0]['nic_type'], self.runtime_option['networkcards'][0]['nic_mac'])
+                        _network_para = " --nic1 nat --nictype1 %s --macaddress1 %s" % (self.runtime_option['networkcards'][0]['nic_type'], self.runtime_option['networkcards'][0]['nic_mac'])
+
                     if self.runtime_option['protocol'] != 'RDP':
                         ostypepara_value = _network_para + " --audio none "
                     else:

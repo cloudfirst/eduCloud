@@ -83,11 +83,13 @@ for VS:
 ==========================================
 VM Post-boot Event Handle Designe
 ==========================================
+VMHOSTNAME = user+ccname+ncip[3]+vmip[3]
+
 Description:
 there os a program that will be executed after windows VM booting,
 and this program will do following:
 - read the MAC address
-- post MAC address to clcl
+- post MAC address to clc
 - get back the runtime_option, include hostname, new IP address
 - rewrite the host name,
 - reconfigure the IP adress
@@ -108,7 +110,7 @@ I not bind between account/IP(DHCP)/MAC(random)
 II binding IP(static)/MAC(random)
     ACMBinding = 1
     - random gen MAC, and {tid, IP, MAC}
-II binding account/IP/MAC
+II binding account/IP/MAC  # use rules to
     ACMBinding = 2
     - prepae {account, IP, MAC}
     - and {tid, {a, ip, mac}}

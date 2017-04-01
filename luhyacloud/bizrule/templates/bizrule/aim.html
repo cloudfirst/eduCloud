@@ -7,7 +7,6 @@
 <button id="add"      class="btn btn-default">{% trans "Add Rule" %}</button>
 <div id="variables"   style="display: none;">{{ variables }}</div>
 <div id="rules"       style="display: none;">{{ rules }}</div>
-<div id="images"      style="display: none;">{{ images }}</div>
 <p></p>
 <div class="alert alert-success" style="display: none">
       {% trans "New Rules are submitted Successfully." %}
@@ -22,13 +21,11 @@
 <script src="{% static "bizrule/js/rule-builder.js" %}"></script>
 <script>
     function build_a_rule(vars, rule) {
-        var _images = JSON.parse($("#images").text());
         var newdiv = $("<div>", {"class": "newrule"});
         $("#mysubmit").before(newdiv);
         var options = {
            "variables" : vars,
            "rule"      : rule,
-           "images"    : _images,
         }
         var rb = newdiv.ruleBuilder(options);
     }
@@ -46,9 +43,9 @@
             rules.push(rule);
         });
         console.log(JSON.stringify(rules));
-        url = "/bizrule/postlogin/rule/submit";
+        url = "/bizrule/aim/rule/submit";
             postdata = {
-                rule_type:         "postlogin",
+                rule_type:         "aim",
                 rule_array:         JSON.stringify(rules),
             }
             $.post(url, postdata, function(data) {

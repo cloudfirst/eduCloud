@@ -400,7 +400,135 @@ def get_nc_avail_res(nc_mac):
 
     return final_avail_res
 
-def findVMRunningResource(request, insid):
+def buildUserObjectForAIMRuleEngine(user):
+    return buildUserObjectForScheduleRuleEngine(user)
+
+def buildUserObjectForScheduleRuleEngine(user):
+    user_rec = ecAccount.objects.get(userid=user)
+    #auth_user_rec = auth_user.objects.get(username=request.user)
+
+    user = {}
+    user["user_id"] = user_rec.userid
+    user["user_name"]  = user_rec.showname
+    user["user_group"] = user_rec.ec_authpath_name
+    vdpara = json.loads(user_rec.vdpara)
+    user["user_usb"]  = vdpara["usb"]
+    #user["user_superuser"] = auth_user_rec.is_superuser
+
+    return user
+
+def buildVMObjectForAIMRuleEngine(tid):
+    vm = buildVMObjectForScheduleRuleEngine(tid)
+
+    vm["ip"]        = ""
+    vm["mask"]      = ""
+    vm["gateway"]   = ""
+    vm["mac"]       = ""
+    vm["dns"]       = ""
+
+    rec = ectaskTransaction.objects.get(tid=tid)
+    vm["ccip"]      = rec.ccip
+    vm["ncip"]      = rec.ncip
+
+    rec = ecServers.objects.get(ip0=vm["ccip"], role="cc")
+    vm["ccname"]    = rec.ccname
+
+    return vm
+
+def buildVMObjectForScheduleRuleEngine(tid):
+    srcid, dstid, insid = parseTID(tid)
+
+    vm = {}
+    vm["src_imageid"] = srcid
+    vm["dst_imageid"] = dstid
+    vm["insid"]       = insid
+
+    rec = ecImages.objects.get(ecid=srcid)
+    vm["name"]          = rec.name
+    vm["ostype"]        = rec.ostype
+    vm["usage"]         = rec.img_usage
+    vm["hypervisor"]    = rec.hypervisor
+
+    if rec.img_usage == "server":
+        vmtypeobj = ecVMTypes.objects.get(name='vssmall')
+    else:
+        vmtypeobj = ecVMTypes.objects.get(name='vdsmall')
+    vm["memory"] = vmtypeobj.memory
+    vm["cpus"]   = vmtypeobj.cpus
+
+    vm["cc"] = "any"
+    vm["nc"] = "any"
+    if insid.find('VD') == 0 or insid.find('PVD') == 0:
+        vmrec = ecVDS.objects.get(insid=insid)
+        vm["memory"]    = vmrec.memory
+        vm["cpus"]      = vmrec.cpus
+        vm["cc"]        = vmrec.cc_def
+        vm["nc"]        = vmrec.nc_def
+        vm['name']      = vmrec.name
+    if insid.find('VS') == 0:
+        vmrec = ecVSS.objects.get(insid=insid)
+        vm["memory"] = vmrec.memory
+        vm["cpus"] = vmrec.cpus
+        vm["cc"] = vmrec.cc_def
+        vm["nc"] = vmrec.nc_def
+        vm["name"] = vmrec.name
+
+    return vm
+
+def applyScheduleRule(userobj, vmobj):
+    scheduled = False
+    payload = {
+        "user": json.dumps(userobj),
+        "vm"  : json.dumps(vmobj),
+    }
+
+    result = askBizRuleforResult("localhost", "vmschedule", payload)
+    if result["Result"] == "OK":
+        scheduled = result["triggered"]
+        if scheduled:
+            vmobj["cc"] = result["data"]["cc"]
+            vmobj["nc"] = result["data"]["nc"]
+            logger.error("after vmschedule bizrule, %s - %s:%s:%s triggered the rule." % (userobj["user_id"], vmobj["src_imageid"], vmobj["dst_imageid"], vmobj["insid"]))
+            logger.error("after vmschedule bizurle, find cc=%s nc=%s" % (vmobj["cc"], vmobj["nc"]))
+        else:
+            logger.error("after vmschedule bizrule, %s - %s:%s:%s not trigger the rule." % (userobj["user_id"], vmobj["src_imageid"], vmobj["dst_imageid"], vmobj["insid"] ))
+    elif result["Result"] == "FAIL":
+        logger.error("after vmschedule bizrule, %s - %s:%s:%s report FAIL." % (userobj["user_id"], vmobj["src_imageid"], vmobj["dst_imageid"], vmobj["insid"]))
+
+    return scheduled, vmobj["cc"], vmobj["nc"]
+
+##################################
+# 1. computer classroom use rule to get ip/account bingding vm.ccname == allinone, ip = prefix.account_no*2+1
+# 2. school office use rule to get ip/account binding
+# 3. company
+##################################
+def applyAIMRule(userobj, vmobj):
+    triggered = False
+    payload = {
+        "user": json.dumps(userobj),
+        "vm":   json.dumps(vmobj),
+    }
+
+    result = askBizRuleforResult("localhost", "aim", payload)
+    if result["Result"] == "OK":
+        triggered = result["triggered"]
+        if triggered:
+            vmobj["ip"]     = result["data"]["ip"]
+            vmobj["mac"]    = result["data"]["mac"]
+            vmobj["mask"]   = result["data"]["mask"]
+            vmobj["gateway"]= result["data"]["gateway"]
+            vmobj["dns"]    = result["data"]["dns"]
+            logger.error("after aim bizrule, %s - %s:%s:%s triggered the rule." % (userobj["user_id"], vmobj["src_imageid"], vmobj["dst_imageid"], vmobj["insid"]))
+            logger.error("after aim bizurle, find ip=%s mac=%s" % (vmobj["ip"], vmobj["mac"]))
+        else:
+            logger.error("after aim bizrule, %s - %s:%s:%s not trigger the rule." % (userobj["user_id"], vmobj["src_imageid"], vmobj["dst_imageid"], vmobj["insid"]))
+    elif result["Result"] == "FAIL":
+        logger.error("after aim bizrule, %s - %s:%s:%s report FAIL." % (userobj["user_id"], vmobj["src_imageid"], vmobj["dst_imageid"], vmobj["insid"]))
+
+    return triggered, vmobj
+
+def findVMRunningResource(request, tid):
+    srcid, dstid, insid = parseTID(tid)
     ua_admin = ecAccount.objects.get(userid=request.user)
     ua_admin_role_value = ecAuthPath.objects.get(ec_authpath_name = ua_admin.ec_authpath_name)
     role_prefix = ua_admin_role_value.ec_authpath_value.split('.admin')[0]
@@ -429,6 +557,13 @@ def findVMRunningResource(request, insid):
     nc_def = vmrec.nc_def
 
     logger.error("cc_def=%s nc_def=%s" % (cc_def, nc_def))
+
+    scheduled = False
+    if os.path.exists("/etc/educloud/modules/bizrule") == True:
+        _user = buildUserObjectForScheduleRuleEngine(request.user)
+        _vm   = buildVMObjectForScheduleRuleEngine(tid)
+        scheduled, cc_def, nc_def = applyScheduleRule(_user, _vm)
+
     if cc_def == 'any':
         if is_vd_allowed_in_vscc() == True:
             ccs = ecCCResources.objects.filter()
@@ -469,18 +604,22 @@ def findVMRunningResource(request, insid):
     logger.error("end = %d" % end)
     for index in range(0, end):
         data = l[end - index -1]
-        if data['1mem']         > vm_res_matrix['mem']          and \
-           data['2cpu_usage']   > vm_res_matrix['cpu_usage']    and \
-           data['3disk']        > vm_res_matrix['disk']:
+        if data['1mem'] < vm_res_matrix['mem']:
+            _msg = (_('available nc %s Memory is ') + '%s G' + _(', but required is ') + '%s G') % (data['xncip'], data['1mem'], vm_res_matrix['mem'])
+            logger.error(_msg)
+        elif data['2cpu_usage']  < vm_res_matrix['cpu_usage']:
+            _msg = (_('available nc %s CPU is ') + '%s' + _(', but required is ') + '%s ') % (data['xncip'], data['2cpu_usage'], vm_res_matrix['cpu_usage'])
+            logger.error(_msg)
+        elif  data['3disk']      < vm_res_matrix['disk']:
+            _msg = (_('available nc %s Disk is ') + '%s G' + _(', but required is ') + '%s G') % (data['xncip'], data['3disk'], vm_res_matrix['disk'])
+            logger.error(_msg)
+        else:
             _ccip = data['xccip']
             _ncip = data['xncip']
             bfind = True
             _msg = ''
             logger.error("get best node : ip = %s" % _ncip)
-            break;
-        else:
-            _msg = (_('available nc resource is ') + '%s' + _(', but required is ') + '%s') % (json.dumps(data), json.dumps(vm_res_matrix))
-            logger.error(_msg)
+            break
 
     ## optimize for allinone configuration
     if bfind == False:
@@ -493,12 +632,14 @@ def findVMRunningResource(request, insid):
 
     return _ccip, _ncip, _msg
 
-def findBuildResource(srcid):
-
+def findBuildResource(request, tid):
+    srcid, dstid, insid = parseTID(tid)
     l = SortedList()
 
     _ccip = None
     _ncip = None
+    cc_def = "any"
+    nc_def = "any"
     _msg  = _("Can't Find appropriate cluster machine and node machine .")
 
     # get the expected usage of cc
@@ -518,43 +659,73 @@ def findBuildResource(srcid):
 
     logger.error('vm_res_matrix for %s is  %s' % (srcid, json.dumps(vm_res_matrix)))
 
+    scheduled = False
+    if os.path.exists("/etc/educloud/modules/bizrule") == True:
+        _user = buildUserObjectForScheduleRuleEngine(request.user)
+        _vm   = buildVMObjectForScheduleRuleEngine(tid)
+        scheduled, cc_def, nc_def = applyScheduleRule(_user, _vm)
+
     # get a list of cc
-    if is_vd_allowed_in_vscc() == True:
-        ccs = ecCCResources.objects.filter()
+    if cc_def == 'any':
+        if is_vd_allowed_in_vscc() == True:
+            ccs = ecCCResources.objects.filter()
+        else:
+            ccs = ecCCResources.objects.filter(cc_usage=filter)
     else:
-        ccs = ecCCResources.objects.filter(cc_usage=filter)
+        ccs = ecCCResources.objects.filter(ccname=cc_def)
 
     # for each cc, find a good candidate nc and return, based on data in memcache
     # and compare all these selected ncs, find the best one
     for cc in ccs:
         # get list of ncs
         ccobj = ecServers.objects.get(ccname=cc.ccname, role='cc')
-        ncs   = ecServers.objects.filter(ccname=cc.ccname , role='nc')
-        for nc in ncs:
-            if nc.hypervisor == rec.hypervisor:
-                final_avail_res = get_nc_avail_res(nc.mac0)
-                final_avail_res['xncip'] = nc.ip0
-                final_avail_res['xccip'] = ccobj.ip0
-                l.add(final_avail_res)
+        if nc_def == "any":
+            ncs   = ecServers.objects.filter(ccname=cc.ccname , role='nc')
+            for nc in ncs:
+                if nc.hypervisor == rec.hypervisor:
+                    final_avail_res = get_nc_avail_res(nc.mac0)
+                    final_avail_res['xncip'] = nc.ip0
+                    final_avail_res['xccip'] = ccobj.ip0
+                    l.add(final_avail_res)
+        else:
+            ncobj = ecServers.objects.get(ccname=cc.ccname, ip0=nc_def, role='nc')
+            final_avail_res = get_nc_avail_res(ncobj.mac0)
+            final_avail_res['xncip'] = ncobj.ip0
+            final_avail_res['xccip'] = ccobj.ip0
+            l.add(final_avail_res)
+            logger.error("final_avail_res = %s" % json.dumps(final_avail_res))
 
     end = len(l)
+    bfind = False
     for index in range(0, end):
         data = l[end - index -1]
         if data['1mem'] < vm_res_matrix['mem']:
-            _msg = (_('available nc %s Memory is ') + '%s G' + _(', but required is ') + '%s G') % (data['xncip'], data['1mem'], vm_res_matrix['mem'])
+            avai_mem = data['1mem']
+            need_mem = vm_res_matrix['mem']
+            _msg =  _("available nc=") + data["xncip"] + _( " Memory is ") +  str(avai_mem) + 'G' +  _(", but required is ") + str(need_mem) + 'G'
             logger.error(_msg)
         elif data['2cpu_usage']  < vm_res_matrix['cpu_usage']:
-            _msg = (_('available nc %s CPU is ') + '%s' + _(', but required is ') + '%s ') % (data['xncip'], data['2cpu_usage'], vm_res_matrix['cpu_usage'])
+            _msg = _("available nc=") + data["xncip"] + _(" CPU usage is ") + str(data['2cpu_usage'])  + _(", but required is ") + str(vm_res_matrix['cpu_usage'])
             logger.error(_msg)
         elif  data['3disk']      < vm_res_matrix['disk']:
-            _msg = (_('available nc %s Disk is ') + '%s G' + _(', but required is ') + '%s G') % (data['xncip'], data['3disk'], vm_res_matrix['disk'])
+            msg = _("available nc=") + data["xncip"] + _(" Memory is ") + str(data['3disk']) + 'G' + _(", but required is ") + str(vm_res_matrix['disk']) + 'G'
             logger.error(_msg)
         else:
             _ccip = data['xccip']
             _ncip = data['xncip']
+            bfind = True
             _msg = ''
             logger.error("get best node : ip = %s" % _ncip)
             break
+
+    ## optimize for allinone configuration
+    if bfind == False:
+        if amIclc() and amIcc() and amInc():
+            clcobj = ecServers.objects.get(role='clc')
+            _ccip = clcobj.ip0
+            _ncip = clcobj.ip0
+            _msg = ''
+            logger.error("allinone get best node : ip = %s" % _ncip)
 
     return _ccip, _ncip, _msg
 
@@ -2003,6 +2174,8 @@ def getAccessProtocol(tid):
 
 def genRuntimeOptionForImageBuild(transid):
     logger.error("--- --- --- genRuntimeOptionForImageBuild")
+    runtime_option = {}
+
     tid_info = transid.split(':')
     src_imgid = tid_info[0]
     dst_imgid = tid_info[1]
@@ -2013,6 +2186,7 @@ def genRuntimeOptionForImageBuild(transid):
     ccip = tid_rec.ccip
     ncip = tid_rec.ncip
     user = tid_rec.user
+    runtime_option["user"] = user
     user_obj = ecAccount.objects.get(userid=user)
     user_vdpara = json.loads(user_obj.vdpara)
 
@@ -2020,7 +2194,6 @@ def genRuntimeOptionForImageBuild(transid):
     ccres_info  = ecCCResources.objects.get(ccmac0=ccobj.mac0)
     ncobj       = ecServers.objects.get(ip0=ncip, role='nc')
 
-    runtime_option = {}
     # 0. get vm access protocol
     runtime_option['protocol'] =  getAccessProtocol(transid)
     if user_vdpara['usb'] == '0':
@@ -2073,19 +2246,40 @@ def genRuntimeOptionForImageBuild(transid):
     networkcards = []
     netcard = {}
     netcard['nic_type'] = ostype_info.ec_nic_type
-    if ccres_info.cc_usage == 'rvd' or runtime_option['usage'] == 'desktop':
-        netcard['nic_mac']  = randomMAC()
-        netcard['nic_ip']   = ''
-    if ccres_info.cc_usage == 'vs' and runtime_option['usage'] == 'server':
-        netcard['nic_mac'], netcard['nic_ip'], web_port = ethers_allocate(ccres_info.ccname, ins_id)
-        if netcard['nic_mac'] == None:
-            releaseRuntimeOptionForImageBuild(transid, runtime_option)
-            return None, _('Need more ether resources.')
-        else:
-            runtime_option['web_ip'] = netcard['nic_ip']
-            runtime_option['web_port'] = web_port
-            logger.error('allocate web port %s for %s' % (web_port, transid))
 
+    triggered = False
+    if os.path.exists("/etc/educloud/modules/bizrule") == True:
+        _user = buildUserObjectForAIMRuleEngine(user)
+        _vm   = buildVMObjectForAIMRuleEngine(transid)
+        triggered, vmobj = applyAIMRule(_user, _vm)
+
+    if triggered: # if rule engine applied, use the output ip/mac
+        netcard['nic_mac']      = vmobj["mac"]
+        netcard['nic_ip']       = vmobj["ip"]
+        netcard["nic_mask"]     = vmobj["mask"]
+        netcard['nic_gateway']  = vmobj["gateway"]
+        netcard["nic_dns"]      = vmobj["dns"]
+        netcard["nic_reboot"]   = vmobj["reboot"]
+        netcard['nic_mode']     = "bridge"
+    else:
+        if ccres_info.cc_usage == 'rvd' or runtime_option['usage'] == 'desktop':
+            netcard['nic_mac']  = randomMAC()
+            netcard['nic_ip']   = ''
+            netcard['nic_mode'] = "nat"
+
+        if ccres_info.cc_usage == 'vs' and runtime_option['usage'] == 'server':
+            netcard['nic_mode'] = "bridge"
+            netcard['nic_mac'], netcard['nic_ip'], web_port = ethers_allocate(ccres_info.ccname, ins_id)
+            if netcard['nic_mac'] == None:
+                releaseRuntimeOptionForImageBuild(transid, runtime_option)
+                return None, _('Need more ether resources.')
+            else:
+                runtime_option['web_ip'] = netcard['nic_ip']
+                runtime_option['web_port'] = web_port
+                logger.error('allocate web port %s for %s' % (web_port, transid))
+
+    tid_rec.mac = netcard['nic_mac']
+    tid_rec.save()
     networkcards.append(netcard)
     runtime_option['networkcards'] = networkcards
 
@@ -2220,7 +2414,7 @@ def vm_run(request, insid):
     if trecs.count() > 0:
         return image_create_task_view(request, vmrec.imageid, vmrec.imageid, insid)
     else:
-        _ccip, _ncip, _msg = findVMRunningResource(request, insid)
+        _ccip, _ncip, _msg = findVMRunningResource(request, _tid)
         if _ncip == None:
             # not find proper cc,nc for build image
             context = {
@@ -2278,7 +2472,7 @@ def image_create_task_start(request, srcid):
 
     logger.error("tid=%s" % _tid)
 
-    _ccip, _ncip, _msg = findBuildResource(srcid)
+    _ccip, _ncip, _msg = findBuildResource(request, _tid)
 
     if _ncip == None:
         # not find proper cc,nc for build image
@@ -2673,7 +2867,7 @@ def image_modify_task_start(request, srcid):
 
     logger.error("tid=%s" % _tid)
 
-    _ccip, _ncip, _msg = findBuildResource(srcid)
+    _ccip, _ncip, _msg = findBuildResource(request, _tid)
 
     if _ncip == None:
         # not find proper cc,nc for build image
@@ -5670,11 +5864,11 @@ def list_myvds(request):
                 if vd["name"] in new_vds_list:
                     new_vds_array.append(vd)
             response['data'] = new_vds_array
-            logger.error("after bizrule, user %s trigger the rule and new vms is: %s" % (_user, new_vds_array))
+            logger.error("after postlogin bizrule, user %s trigger the rule and new vms is: %s" % (_user, new_vds_array))
         elif result["Result"] == "FAIL":
-            logger.error("after bizrule, user %s error reported as %s" % (_user, result['reason']))
+            logger.error("after postlogin bizrule, user %s error reported as %s" % (_user, result['reason']))
         else:
-            logger.error("after bizrule, user %s not trigger the rule." % (_user))
+            logger.error("after postlogin bizrule, user %s not trigger the rule." % (_user))
 
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
@@ -5703,7 +5897,7 @@ def rvd_start(request, srcid, dstid, insid):
         retvalue = json.dumps(response)
         return HttpResponse(retvalue, content_type="application/json")
     else:
-        _ccip, _ncip, _msg = findVMRunningResource(request, insid)
+        _ccip, _ncip, _msg = findVMRunningResource(request, _tid)
 
         if _ncip == None:
             response['Result'] = 'FAIL'
@@ -5763,7 +5957,7 @@ def rvd_create(request, srcid):
 
     logger.error("--- --- --- rvd_create %s" % _tid)
 
-    _ccip, _ncip, _msg = findBuildResource(srcid)
+    _ccip, _ncip, _msg = findBuildResource(request, _tid)
     if _ncip == None:
         # not find proper cc,nc for build image
         response['Result'] = 'FAIL'
@@ -5897,17 +6091,49 @@ def rvd_get_rdp_url(request, srcid, dstid, insid):
     return rvd_get_rdp_para(request, srcid, dstid, insid)
 
 def vm_afterboot(request):
-    vmfile = 'afterboot.py'
-    #mac = request.POST['mac']
-    #filepath = '/usr/local/webconfig/%s' % vmfile
-    filepath = '/storage/config/%s' % vmfile
-
-    with open(filepath, 'r') as myfile:
-        mycontent = myfile.readlines()
+    # find tid record for this vm instance
+    mac = request.POST['mac']
+    bfind = False
+    try:
+        trec = ectaskTransaction.objects.get(mac=mac)
+        runtime_option = json.loads(trec.runtime_option)
+        netcard = runtime_option["networkcards"][0]
+        bfind = True
+    except Exception as e:
+        pass
 
     response = {}
-    response['Result']   = 'OK'
-    response['filename'] = vmfile
-    response['content']  = mycontent
+    if not bfind:
+        response["Result"] = "FAIL"
+    else:
+        if netcard["nic_mode"]  == "nat":
+            response["Result"] = "FAIL"
+        elif netcard["nic_mode"] == "bridge":
+            response["Result"] = "OK"
+            vmfile = 'afterboot.py'
+            #filepath = '/usr/local/webconfig/%s' % vmfile
+            filepath = '/storage/config/%s' % vmfile
+            with open(filepath, 'r') as myfile:
+                mycontent = myfile.readlines()
+
+            myscript = ""
+            for line in mycontent:
+                myscript += line
+
+            # set hostname
+            myscript = myscript.replace("NAMEFLAG", "yes")
+            myscript = myscript.replace("new-host-name", runtime_option["user"])
+
+            # set ip/mask/gateway
+            myscript = myscript.replace("IPFLAG", "yes")
+            myscript = myscript.replace("new-host-ipaddr",    netcard["nic_ip"])
+            myscript = myscript.replace("new-host-ipmask",    netcard["nic_mask"])
+            myscript = myscript.replace("new-host-ipgateway", netcard["nic_gateway"])
+            myscript = myscript.replace("new-host-dns",       netcard["nic_dns"])
+            myscript = myscript.replace("BOOTFLAG",           netcard["nic_reboot"])
+
+            response['filename'] = vmfile
+            response['content']  = myscript
+
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")

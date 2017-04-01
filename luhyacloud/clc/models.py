@@ -370,6 +370,7 @@ class ectaskTransaction(models.Model):
     progress    = models.IntegerField(default=0)   # 0(default)-100, -100, <0
     ccip        = models.CharField(max_length=100)
     ncip        = models.CharField(max_length=100)
+    mac         = models.CharField(max_length=20)
     runtime_option = models.TextField()
     message     = models.TextField()
     completed   = models.BooleanField(default=False)

@@ -36,7 +36,7 @@ def getWindowsVersion():
 
 
 def setHostIP():
-    if hostipaddr_config["bipchange"] != "Yes":
+    if hostipaddr_config["bipchange"] != "yes":
         return
 
     wmiService = wmi.WMI()
@@ -50,9 +50,8 @@ def setHostIP():
     returnValue = objNicConfig.SetDNSServerSearchOrder(DNSServerSearchOrder=hostipaddr_config["ipdns"])
     return returnValue
 
-
 def setHostName():
-    if hostname_config['bnamechange'] != "Yes":
+    if hostname_config['bnamechange'] != "yes":
         return
 
     aKey = OpenKey(_winreg.HKEY_LOCAL_MACHINE, r'SYSTEM\ControlSet001\Control\ComputerName\ActiveComputerName', 0,
@@ -75,21 +74,8 @@ def setHostName():
     SetValueEx(aKey, "Hostname", 0, _winreg.REG_SZ, hostname_config['newname'])
     CloseKey(aKey)
 
-    if hostname_config['breboot'] != "Yes":
+    if hostname_config['breboot'] == "yes":
         os.system("shutdown /r /t 0")
-
-
-def changeHostName():
-    hostname = '%s\\hostname.txt' % TMP
-    with open(hostname, 'w') as myfile:
-        myfile.write('changeHostName')
-
-
-def changeHostIP():
-    ipaddr = '%s\\ipaddr.txt' % TMP
-    with open(ipaddr, 'w') as myfile:
-        myfile.write('changeHostIP')
-
 
 def changeHost():
     setHostIP()

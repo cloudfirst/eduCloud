@@ -4,22 +4,9 @@ from business_rules.variables import *
 from business_rules.actions import *
 from business_rules.operators import *
 from models import *
+from clc.models import *
+from django.utils.translation import ugettext as _
 
-# ex_user = {
-#     "name":         "thomas",
-#     "group":        "dongzhan",
-#     "image_list":   ["abc", "edf"],
-#     "loc":          "",
-# }
-
-# def export_user_images():
-#     result = []
-#     for image in ex_user['image_list']:
-#         op = {}
-#         op['label'] = image
-#         op['name']  = image
-#         result.append(op)
-#     return result
 
 class postloginVariables(BaseVariables):
     def __init__(self, user):
@@ -59,85 +46,6 @@ class postloginActions(BaseActions):
     @rule_action(params={"tp": FIELD_SELECT, "pt": FIELD_SELECT})
     def test_action(self, tp, pt):
         pass
-#
-# def postlogin_get_rules():
-#     rules = [
-#         {
-#             # group name == "" and day == "" and time == ""
-#             "conditions":
-#             { "all":
-#                 [
-#                     {
-#                         "name": "login_time_of_day",
-#                         "operator": "equal_to",
-#                         "value": "Sat"
-#                     },
-#                     {
-#                         "name": "login_time_of_hour",
-#                         "operator": "greater_than",
-#                         "value": 900,
-#                     },
-#                     {
-#                         "name": "login_time_of_hour",
-#                         "operator": "less_than",
-#                         "value": 1000,
-#                     },
-#                     {"any": [
-#                         {
-#                             "name": "login_user_group",
-#                             "operator": "contains",
-#                             "value": "dong"
-#                         },
-#                         {
-#                             "name": "login_time_of_hour",
-#                             "operator": "less_than",
-#                             "value": 1000,
-#                         },
-#                     ]},
-#                 ]
-#             },
-#             "actions":
-#                 [
-#                     {
-#                         "name":     "set_image",
-#                         "params":   {"image": "xp"}
-#                     }
-#                 ],
-#         },
-#         {
-#             # group name == "" and day == "" and time == ""
-#             "conditions":
-#                 {"all": [
-#                     {
-#                         "name": "login_user_group",
-#                         "operator": "contains",
-#                         "value": "zhan"
-#                     },
-#                     {
-#                         "name": "login_time_of_day",
-#                         "operator": "equal_to",
-#                         "value": "Sat"
-#                     },
-#                     {
-#                         "name": "login_time_of_hour",
-#                         "operator": "greater_than",
-#                         "value": 1700,
-#                     },
-#                     {
-#                         "name": "login_time_of_hour",
-#                         "operator": "less_than",
-#                         "value": 1900,
-#                     },
-#                 ]},
-#             "actions": [
-#                 {
-#                     "name": "set_image",
-#                     "params": {"image": "win7"},
-#                 }
-#             ],
-#         },
-#     ]
-#     return json.dumps(rules)
 
 def postlogin_get_rules():
     recs = bizRule.objects.filter(rule_name="postlogin")
@@ -164,3 +72,22 @@ def postlogin_run(user):
            )
     return out, user
 
+def verify_params_in_set_image(params):
+    image_name = params["image"]
+    recs = ecImages.objects.filter(name=image_name)
+    if recs.count() > 0:
+        return True, ""
+    else:
+        return False, image_name + _(" is not an valid image name")
+
+def postlogin_verify_action_params(actions):
+    msg = ""
+    flag = False
+
+    for act in actions:
+        if act["name"] == "set_image":
+            flag, msg = verify_params_in_set_image(act["params"])
+            if not flag:
+                break
+
+    return flag, msg

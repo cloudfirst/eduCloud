@@ -384,7 +384,7 @@
             }
         } else {
             for (var i=0; i<actions[index].params.length; i++) {
-                var select_label= $("<label>", {"class": "lable-inline param_name", "text": actions[index].params[i].label+"=" });
+                var select_label= $("<label>", {"class": "lable-inline param_name", "text": actions[index].params[i].name+"=" });
                 container.append(select_label);
 
                 var select_value= $("<input>", {"class": "input-inline param_val"});
