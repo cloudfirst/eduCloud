@@ -2244,8 +2244,8 @@ def genRuntimeOptionForImageBuild(transid):
 
     # 3.2 set netcard in vm
     networkcards = []
-    netcard = {}
-    netcard['nic_type'] = ostype_info.ec_nic_type
+    netcard1 = {}
+    netcard1['nic_type'] = ostype_info.ec_nic_type
 
     triggered = False
     if os.path.exists("/etc/educloud/modules/bizrule") == True:
@@ -2253,34 +2253,37 @@ def genRuntimeOptionForImageBuild(transid):
         _vm   = buildVMObjectForAIMRuleEngine(transid)
         triggered, vmobj = applyAIMRule(_user, _vm)
 
-    if triggered: # if rule engine applied, use the output ip/mac
-        netcard['nic_mac']      = vmobj["mac"]
-        netcard['nic_ip']       = vmobj["ip"]
-        netcard["nic_mask"]     = vmobj["mask"]
-        netcard['nic_gateway']  = vmobj["gateway"]
-        netcard["nic_dns"]      = vmobj["dns"]
-        netcard["nic_reboot"]   = vmobj["reboot"]
-        netcard['nic_mode']     = "bridge"
-    else:
-        if ccres_info.cc_usage == 'rvd' or runtime_option['usage'] == 'desktop':
-            netcard['nic_mac']  = randomMAC()
-            netcard['nic_ip']   = ''
-            netcard['nic_mode'] = "nat"
+        if triggered: # if rule engine applied, use the output ip/mac
+            netcard1['nic_mac']      = vmobj["mac"]
+            netcard1['nic_ip']       = vmobj["ip"]
+            netcard1["nic_mask"]     = vmobj["mask"]
+            netcard1['nic_gateway']  = vmobj["gateway"]
+            netcard1["nic_dns"]      = vmobj["dns"]
+            netcard1["nic_reboot"]   = vmobj["reboot"]
+            netcard1['nic_mode']     = "bridge"
+            networkcards.append(netcard1)
+            tid_rec.mac = netcard1['nic_mac']
+            tid_rec.save()
 
-        if ccres_info.cc_usage == 'vs' and runtime_option['usage'] == 'server':
-            netcard['nic_mode'] = "bridge"
-            netcard['nic_mac'], netcard['nic_ip'], web_port = ethers_allocate(ccres_info.ccname, ins_id)
-            if netcard['nic_mac'] == None:
-                releaseRuntimeOptionForImageBuild(transid, runtime_option)
-                return None, _('Need more ether resources.')
-            else:
-                runtime_option['web_ip'] = netcard['nic_ip']
-                runtime_option['web_port'] = web_port
-                logger.error('allocate web port %s for %s' % (web_port, transid))
+    netcard2 = {}
+    netcard2['nic_type'] = ostype_info.ec_nic_type
+    if ccres_info.cc_usage == 'rvd' or runtime_option['usage'] == 'desktop':
+        netcard2['nic_mac']  = randomMAC()
+        netcard2['nic_ip']   = ''
+        netcard2['nic_mode'] = "nat"
 
-    tid_rec.mac = netcard['nic_mac']
-    tid_rec.save()
-    networkcards.append(netcard)
+    if ccres_info.cc_usage == 'vs' and runtime_option['usage'] == 'server':
+        netcard2['nic_mode'] = "bridge"
+        netcard2['nic_mac'], netcard2['nic_ip'], web_port = ethers_allocate(ccres_info.ccname, ins_id)
+        if netcard2['nic_mac'] == None:
+            releaseRuntimeOptionForImageBuild(transid, runtime_option)
+            return None, _('Need more ether resources.')
+        else:
+            runtime_option['web_ip'] = netcard2['nic_ip']
+            runtime_option['web_port'] = web_port
+            logger.error('allocate web port %s for %s' % (web_port, transid))
+
+    networkcards.append(netcard2)
     runtime_option['networkcards'] = networkcards
 
     # 3.3 add disks and folders

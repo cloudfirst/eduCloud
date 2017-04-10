@@ -295,7 +295,7 @@
         create_action: function(act) {
             var form_group  = $("<div>", {"class": "form-group"});
             form_group.data("act", act);
-            var select_name = $("<select>", {"class": "select-inline func_name"});
+            var select_name = $("<select>", {"class": " func_name"});
             select_name.change(onFuncNameSelectChange);
             var actions = this.options.variables.actions;
             form_group.data("actions", actions);
@@ -316,18 +316,18 @@
             if (act != null) {
                 act_keys = Object.keys(act.params);
                 for (var i=0; i<act_keys.length; i++) {
-                    var select_label= $("<label>", {"class": "lable-inline param_name", "text": act_keys[i]+"=" });
+                    var select_label= $("<label>", {"class": " param_name", "text": act_keys[i]+"=" });
                     form_group.append(select_label);
 
-                    var select_value= $("<input>", {"class": "input-inline param_val", "value": act.params[act_keys[i]]});
+                    var select_value= $("<input>", {"class": " param_val", "value": act.params[act_keys[i]]});
                     form_group.append(select_value);
                 }
             } else {
                 for (var i=0; i<actions[index].params.length; i++) {
-                    var select_label= $("<label>", {"class": "lable-inline param_name", "text": actions[index].params[i].name+"=" });
+                    var select_label= $("<label>", {"class": " param_name", "text": actions[index].params[i].name+"=" });
                     form_group.append(select_label);
 
-                    var select_value= $("<input>", {"class": "input-inline param_val"});
+                    var select_value= $("<input>", {"class": " param_val"});
                     form_group.append(select_value);
                 }
             }

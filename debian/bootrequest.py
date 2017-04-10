@@ -1,9 +1,20 @@
 import requests, json, os,sys
 from uuid import getnode as get_mac
+import wmi
 
 def getLocalMAC():
     mac = get_mac()
     return ''.join(("%012X" % mac)[i:i+2] for i in range(0, 12, 2))
+
+def getMacAddressbyIndex(index=0):
+    wmiService = wmi.WMI()
+    colNicConfigs = wmiService.Win32_NetworkAdapterConfiguration(IPEnabled=True)
+    if len(colNicConfigs) < 1:
+        return "" # no active network adaptor
+
+    objNicConfig = colNicConfigs[index]
+    mac = objNicConfig.macaddress.replace(":", "")
+    return mac
 
 fileflag = '%s\\%s' % (os.environ['TMP'], 'done.txt')
 if not os.path.exists(fileflag):
@@ -14,7 +25,7 @@ if not os.path.exists(fileflag):
 
     macaddr = getLocalMAC()
     payload = {
-        'mac' : macaddr
+        'mac' : getMacAddressbyIndex(0)
     }
 
     r = requests.post(clc_request_url, data=payload)

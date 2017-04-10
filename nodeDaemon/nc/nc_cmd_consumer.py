@@ -658,10 +658,15 @@ class runImageTaskThread(multiprocessing.Process):
                     _cpus    = self.runtime_option['cpus']
                     _memory  = self.runtime_option['memory'] * 1024
 
-                    if self.runtime_option["nic_mode"] == "bridge"  or self.runtime_option['usb_enabled'] == 1:
-                        _network_para = " --nic1 bridged --bridgeadapter1 %s --nictype1 %s --macaddress1 %s" % (bridged_ifs[0], self.runtime_option['networkcards'][0]['nic_type'],self.runtime_option['networkcards'][0]['nic_mac'])
-                    else:
-                        _network_para = " --nic1 nat --nictype1 %s --macaddress1 %s" % (self.runtime_option['networkcards'][0]['nic_type'], self.runtime_option['networkcards'][0]['nic_mac'])
+                    networkcards = self.runtime_option["networkcards"]
+                    _network_para = ""
+                    index = 1
+                    for netcard in networkcards:
+                        if netcard["nic_mode"] == "bridge":
+                            _network_para += " --nic%s bridged --bridgeadapter%s %s --nictype%s %s --macaddress%s %s " % (str(index), str(index), bridged_ifs[0], str(index), netcard['nic_type'], str(index), netcard['nic_mac'])
+                        if netcard["nic_mode"] == "nat":
+                            _network_para += " --nic%s nat --nictype%s %s " % (str(index), str(index), netcard['nic_type'])
+                        index += 1
 
                     if self.runtime_option['protocol'] != 'RDP':
                         ostypepara_value = _network_para + " --audio none "

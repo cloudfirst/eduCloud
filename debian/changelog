@@ -1,3 +1,9 @@
+educloud (4.0.5) lucid; urgency=low
+  [ Thomas Li ]
+  * add code to support rule engine for postlogin, vm schedule, and account/IP/MAC allocation
+
+ -- Signing Key (Thomas Li) <package@educloud.com>  Sat, 1 April  2017 16:45:53 -0400
+
 educloud (4.0.3) lucid; urgency=low
   [ Thomas Li ]
   * support PVD vm
@@ -5,7 +11,6 @@ educloud (4.0.3) lucid; urgency=low
   * data disk comes with image id and stay at /storage/space/prv-data/uid/disk/imgid/data for TVD,VD,PVD
 
  -- Signing Key (Thomas Li) <package@educloud.com>  Tue, 11 Nov  2016 16:45:53 -0400
-
 
 educloud (4.0.2) lucid; urgency=low
   [ Thomas Li ]
