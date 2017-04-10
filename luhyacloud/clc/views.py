@@ -1030,8 +1030,18 @@ def account_update_profile(request):
 def edit_password(request, uid):
     context = {
         'uid': uid,
+        'isadmin': 0,
     }
     return render(request, 'clc/form/reset_account_password.html', context)
+
+@login_required(login_url='/portal/admlogin')
+def edit_password_by_admin(request, uid):
+    context = {
+        'uid': uid,
+        'isadmin' : 1
+    }
+    return render(request, 'clc/form/reset_account_password.html', context)
+
 
 @login_required(login_url='/portal/admlogin')
 def activate_user(request, uid):
@@ -1054,14 +1064,23 @@ def activate_user(request, uid):
 
 @login_required(login_url='/portal/admlogin')
 def account_reset_password(request):
+    flag = False
     uid = request.POST['userid']
     oldpw = request.POST['oldpassword']
     newpw = request.POST['newpassword']
+    isadmin = int(request.POST["isadmin"])
 
     # verify old password
     response = {}
-    user = authenticate(username=uid, password=oldpw)
-    if user is not None:
+    if isadmin == 0:
+        user = authenticate(username=uid, password=oldpw)
+        if user is not None:
+            flag = True
+    else:
+        user = User.objects.get(username__exact=uid)
+        flag = True
+
+    if flag:
          # set new password
         user.set_password(newpw)
         user.save()
