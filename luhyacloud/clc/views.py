@@ -316,13 +316,13 @@ def askBizRuleforResult(clcip, type_rule, payload):
     if DAEMON_DEBUG == True:
         url = "http://%s:8000/bizrule/%s/rule/run" % (clcip, type_rule)
     else:
-        url = "http://%s:8000/bizrule/%s/rule/run" % (clcip, type_rule)
+        url = "http://%s/bizrule/%s/rule/run" % (clcip, type_rule)
 
     try:
         r = requests.post(url, data=payload)
         result = json.loads(r.content)
     except Exception as e:
-        logger.error("askBizRuleforResult call with exception = %s" % str(e))
+        logger.error("askBizRuleforResult call %s with exception = %s" % (url, tr(e)))
 
     return result
 
@@ -482,7 +482,7 @@ def applyScheduleRule(userobj, vmobj):
         "vm"  : json.dumps(vmobj),
     }
 
-    result = askBizRuleforResult("localhost", "vmschedule", payload)
+    result = askBizRuleforResult("127.0.0.1", "vmschedule", payload)
     if result["Result"] == "OK":
         scheduled = result["triggered"]
         if scheduled:
@@ -509,7 +509,7 @@ def applyAIMRule(userobj, vmobj):
         "vm":   json.dumps(vmobj),
     }
 
-    result = askBizRuleforResult("localhost", "aim", payload)
+    result = askBizRuleforResult("127.0.0.1", "aim", payload)
     if result["Result"] == "OK":
         triggered = result["triggered"]
         if triggered:
@@ -562,7 +562,11 @@ def findVMRunningResource(request, tid):
     if os.path.exists("/etc/educloud/modules/bizrule") == True:
         _user = buildUserObjectForScheduleRuleEngine(request.user)
         _vm   = buildVMObjectForScheduleRuleEngine(tid)
-        scheduled, cc_def, nc_def = applyScheduleRule(_user, _vm)
+        scheduled, _cc_def, _nc_def = applyScheduleRule(_user, _vm)
+
+    if scheduled:
+        cc_def = _cc_def
+        nc_def = _nc_def
 
     if cc_def == 'any':
         if is_vd_allowed_in_vscc() == True:
@@ -2376,6 +2380,14 @@ def genRuntimeOptionForImageBuild(transid):
 def genIPTablesRule(fromip, toip, port):
     return {}
 
+def getUSBIP(runtime_option):
+    networkcards = runtime_option['networkcards']
+    if len(networkcards) > 1:
+        return networkcards[0]['nic_ip']
+    else:
+        return ''
+
+
 def getValidMgrURL(request, runtime_option):
     if request.META['REMOTE_ADDR'] == '10.181.4.103':
         mgr_url = runtime_option['ex_mgr_accessURL']
@@ -2643,6 +2655,7 @@ def image_create_task_run(request, srcid, dstid, insid):
 
     response = {}
     response['Result'] = 'OK'
+    response['tid']    = _tid
     retvalue = json.dumps(response)
 
     return HttpResponse(retvalue, content_type="application/json")
@@ -2655,7 +2668,10 @@ def image_ndp_stop(request):
         if rec.insid.find("TVD") == 0:
             r = delet_task_by_id(rec.tid)
             return HttpResponse(r.content, content_type="application/json")
-        if rec.insid.find("VD") == 0 or rec.insid.find('PVD') == 0:
+        if rec.insid.find("VD") == 0:
+            r = delet_task_by_id(rec.tid)
+            return HttpResponse(r.content, content_type="application/json")
+        if rec.insid.find('PVD') == 0:
             return image_create_task_stop(request, rec.srcimgid, rec.dstimgid, rec.insid)
         if rec.insid.find("VS") == 0:
             return image_create_task_stop(request, rec.srcimgid, rec.dstimgid, rec.insid)
@@ -5785,6 +5801,7 @@ def list_myvds(request):
                     try:
                         runtime_option = json.loads(trec.runtime_option)
                         vd['mgr_url'] = getValidMgrURL(request, runtime_option)
+                        vd['usb_ip']  = getUSBIP(runtime_option)
                     except Exception as e:
                         logger.error("%s runtime_option is invalid as %s" % (trec.tid, trec.runtime_option))
                         vd['mgr_url'] = ''
@@ -5794,6 +5811,7 @@ def list_myvds(request):
                 vd['phase'] = ''
                 vd['state'] = ''
                 vd['mgr_url'] = ''
+                vd['usb_ip']  = ''
                 vd['id']  = 'myvd' + str(index)
 
             fake_tid = '%s:%s:%s' % (imgobj.ecid, imgobj.ecid, 'TMPxxx')
@@ -5831,10 +5849,12 @@ def list_myvds(request):
             logger.error("find vd's transaction record")
             runtime_option = json.loads(trec.runtime_option)
             vd['mgr_url'] = getValidMgrURL(request, runtime_option)
+            vd['usb_ip']  = getUSBIP(runtime_option)
         except Exception as e:
             vd['phase'] = ''
             vd['state'] = ''
             vd['mgr_url'] = ''
+            vd['usb_ip']  = ''
             logger.error("Not find vd's transaction record")
 
         fake_tid = _tid
@@ -5878,7 +5898,7 @@ def list_myvds(request):
             "loc"  : "",
             "image_list" : json.dumps([]),
         }
-        result = askBizRuleforResult("localhost", "postlogin", payload)
+        result = askBizRuleforResult("127.0.0.1", "postlogin", payload)
         if result["Result"] == "OK" and result['triggered']  == True:
             new_vds_list = result['data']["image_list"]
             new_vds_array = []

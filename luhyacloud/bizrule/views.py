@@ -102,6 +102,7 @@ def postlogin_rule_run(request):
             response["triggered"] = triggered
             response["data"] = result
     except Exception as e:
+        logger.error("postlogin db read get exception.")
         response['Result'] = 'FAIL'
         response['reason'] = str(e)
 

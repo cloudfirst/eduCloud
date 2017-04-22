@@ -50,7 +50,8 @@ class nc_statusPublisher():
     def send_node_status_to_cc(self, node_status):
         simple_send(logger, self._ccip, 'cc_status_queue', json.dumps(node_status))
 
-
+# enhancement : http://www.tjansson.dk/2008/01/autofs-and-sshfs-the-perfect-couple/
+# use both sshfs and autofs
 def perform_mount():
     # mount cc's /storage/space/ to local
     if amIcc():
