@@ -7,6 +7,9 @@ from models import *
 from clc.models import *
 from django.utils.translation import ugettext as _
 
+from luhyaapi.educloudLog import *
+logger = getclclogger()
+
 class vmScheduleVariables(BaseVariables):
     def __init__(self, user, vm):
         self.vm = vm

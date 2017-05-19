@@ -4,7 +4,7 @@ import platform as pf
 import _winreg
 from _winreg import ConnectRegistry, OpenKey, CloseKey, QueryInfoKey, SetValueEx
 from uuid import getnode as get_mac
-import wmi
+import wmi, json
 
 TMP = os.environ['TMP']
 
@@ -19,13 +19,13 @@ hostipaddr_config = {
     "ipaddr"        : ["new-host-ipaddr"],
     "ipmask"        : ["new-host-ipmask"],
     "ipgateway"     : ["new-host-ipgateway"],
-    "ipdns"         : ["new-host-dns"]
+    "ipdns"         : ["new-host-dns"],
+    "mac"           : "new-host-mac",
 }
 
 def getActiveMAC():
     mac = get_mac()
     return ':'.join(("%012X" % mac)[i:i + 2] for i in range(0, 12, 2))
-
 
 def getWindowsVersion():
     ver_str = pf.uname()
@@ -34,20 +34,19 @@ def getWindowsVersion():
     if ver_str[2] == '7':
         return "Win7"
 
-
 def setHostIP():
     if hostipaddr_config["bipchange"] != "yes":
         return
 
     wmiService = wmi.WMI()
     colNicConfigs = wmiService.Win32_NetworkAdapterConfiguration(IPEnabled=True)
-    if len(colNicConfigs) < 1:
-        return  # no active network adaptor
-
-    objNicConfig = colNicConfigs[0]  # get first adaptor
-    returnValue = objNicConfig.EnableStatic(IPAddress=hostipaddr_config["ipaddr"],SubnetMask=hostipaddr_config["ipmask"])
-    returnValue = objNicConfig.SetGateways(DefaultIPGateway=hostipaddr_config["ipgateway"], GatewayCostMetric=[1])
-    returnValue = objNicConfig.SetDNSServerSearchOrder(DNSServerSearchOrder=hostipaddr_config["ipdns"])
+    for col in colNicConfigs:
+        mac = col.macaddress.replace(":", "")
+        mac = mac.lower()
+        if mac == hostipaddr_config["mac"]:
+            returnValue = col.EnableStatic(IPAddress=hostipaddr_config["ipaddr"],SubnetMask=hostipaddr_config["ipmask"])
+            returnValue = col.SetGateways(DefaultIPGateway=hostipaddr_config["ipgateway"], GatewayCostMetric=[1])
+            returnValue = col.SetDNSServerSearchOrder(DNSServerSearchOrder=hostipaddr_config["ipdns"])
     return returnValue
 
 def setHostName():
@@ -77,9 +76,10 @@ def setHostName():
     if hostname_config['breboot'] == "yes":
         os.system("shutdown /r /t 0")
 
-def changeHost():
+def changeHost(logger):
+    logger.error("start changeHost ... ...")
+    logger.error("hostname_config = %s" % json.dumps(hostname_config))
+    logger.error("hostipaddr_config = %s" % json.dumps(hostipaddr_config))
+
     setHostIP()
     setHostName()
-
-if __name__ == "__main__":
-    changeHost()

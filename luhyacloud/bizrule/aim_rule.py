@@ -8,6 +8,9 @@ from clc.models import *
 from django.utils.translation import ugettext as _
 from luhyaapi.hostTools import *
 
+from luhyaapi.educloudLog import *
+logger = getclclogger()
+
 class aimVariables(BaseVariables):
     def __init__(self, user, vm):
         self.user = user
@@ -58,6 +61,7 @@ class aimActions(BaseActions):
         self.vm["dns"]      = dns
         self.vm["mac"]      = randomMAC()
         self.vm["reboot"]   = reboot.lower()
+        logger.error("set_ip reboot = %s" % self.vm["reboot"])
 
     @rule_action(params={'ip': FIELD_TEXT,
                          "mask": FIELD_TEXT,
@@ -71,6 +75,7 @@ class aimActions(BaseActions):
         self.vm["gateway"]  = gateway
         self.vm["dns"]      = dns
         self.vm["reboot"]   = reboot.lower()
+        logger.error("set_ip_mac reboot = %s" % self.vm["reboot"])
         if mac == "any":
             self.vm["mac"]  = randomMAC()
         else:
@@ -95,6 +100,7 @@ class aimActions(BaseActions):
         self.vm["dns"]      = dns
         self.vm["mac"]      = randomMAC()
         self.vm["reboot"]   = reboot.lower()
+        logger.error("set_calc_ip reboot = %s" % self.vm["reboot"])
 
 def aim_get_rules():
     recs = bizRule.objects.filter(rule_name="aim")
@@ -110,6 +116,7 @@ def aim_get_variables():
     return json.dumps(out)
 
 def aim_run(user, vm):
+
     from business_rules import run_all
     rule = aim_get_rules()
     dv   = aimVariables(user, vm)

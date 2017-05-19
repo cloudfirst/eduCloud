@@ -44,12 +44,12 @@ logger.error(" - TEMPLATE_DIRS = %s" % TEMPLATE_DIRS)
 SECRET_KEY = 'niy^4ow#z1#)gls#+m0k(f49l6uaiqqt@2+jpb*ey5flqs6bj_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-if os.path.exists("/etc/educloud/modules/core") == True:
-    DEBUG = False
-    TEMPLATE_DEBUG = False
-else:
+if os.path.exists("/etc/educloud/modules/debug") == True:
     DEBUG = True
     TEMPLATE_DEBUG = True
+else:
+    DEBUG = False
+    TEMPLATE_DEBUG = False
 
 logger.error(" - DEBUG = %s" % DEBUG)
 logger.error(" - TEMPLATE_DEBUG = %s" % TEMPLATE_DEBUG)

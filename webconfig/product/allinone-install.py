@@ -1,6 +1,18 @@
 import os, commands, sys, getopt
 import time
 
+def restore_apt():
+    if os.path.exists('/etc/apt/sources.list.luhya'):
+        cmd_line = 'sudo cp /etc/apt/sources.list.luhya /etc/apt/sources.list'
+        commands.getoutput(cmd_line)
+
+        cmd_line = 'sudo rm /etc/apt/sources.list.luhya'
+        commands.getoutput(cmd_line)
+
+def prepare():
+    cmd_line = "sudo apt-get install wget curl"
+    os.system(cmd_line)
+
 def chownDir():
     cmd_line = 'sudo chown -R luhya:luhya /storage && sudo chmod -R 777 /storage'
     commands.getoutput(cmd_line)
@@ -26,6 +38,8 @@ def usage():
     print "Usage : allinone-install [-h hostip -v [vbox|ndp|kvm]]"
 
 def main(argv):
+    prepare()
+
     DST_IP = '121.41.80.147'
     HYPERVISOR = 'ndp'
     MODE = "w"
@@ -340,6 +354,7 @@ def main(argv):
     commands.getoutput(cmd_line)
 
     chownDir()
+    restore_apt()
 
     print '----------------------------------------------------------'
     print  'Now system will reboot to enable all services ... ... ...'

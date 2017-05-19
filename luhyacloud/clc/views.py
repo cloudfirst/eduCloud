@@ -425,6 +425,7 @@ def buildVMObjectForAIMRuleEngine(tid):
     vm["gateway"]   = ""
     vm["mac"]       = ""
     vm["dns"]       = ""
+    vm["reboot"]    = ""
 
     rec = ectaskTransaction.objects.get(tid=tid)
     vm["ccip"]      = rec.ccip
@@ -518,6 +519,7 @@ def applyAIMRule(userobj, vmobj):
             vmobj["mask"]   = result["data"]["mask"]
             vmobj["gateway"]= result["data"]["gateway"]
             vmobj["dns"]    = result["data"]["dns"]
+            vmobj["reboot"] = result["data"]["reboot"]
             logger.error("after aim bizrule, %s - %s:%s:%s triggered the rule." % (userobj["user_id"], vmobj["src_imageid"], vmobj["dst_imageid"], vmobj["insid"]))
             logger.error("after aim bizurle, find ip=%s mac=%s" % (vmobj["ip"], vmobj["mac"]))
         else:
@@ -2196,7 +2198,7 @@ def getAccessProtocol(tid):
     return access_protocol
 
 def genRuntimeOptionForImageBuild(transid):
-    logger.error("--- --- --- genRuntimeOptionForImageBuild")
+    logger.error("call genRuntimeOptionForImageBuild")
     runtime_option = {}
 
     tid_info = transid.split(':')
@@ -2272,11 +2274,13 @@ def genRuntimeOptionForImageBuild(transid):
 
     triggered = False
     if os.path.exists("/etc/educloud/modules/bizrule") == True:
+        logger.error("genRuntimeOptionForImageBuild -- apply bizrule AIM")
         _user = buildUserObjectForAIMRuleEngine(user)
         _vm   = buildVMObjectForAIMRuleEngine(transid)
         triggered, vmobj = applyAIMRule(_user, _vm)
 
         if triggered: # if rule engine applied, use the output ip/mac
+            logger.error("genRuntimeOptionForImageBuild -- trigger bizrule AIM")
             netcard1['nic_mac']      = vmobj["mac"]
             netcard1['nic_ip']       = vmobj["ip"]
             netcard1["nic_mask"]     = vmobj["mask"]
@@ -2285,8 +2289,10 @@ def genRuntimeOptionForImageBuild(transid):
             netcard1["nic_reboot"]   = vmobj["reboot"]
             netcard1['nic_mode']     = "bridge"
             networkcards.append(netcard1)
-            tid_rec.mac = netcard1['nic_mac']
-            tid_rec.save()
+            logger.error("genRuntimeOptionForImageBuild -- save mac %s in table" % netcard1['nic_mac'])
+            # save into memcache
+            mc = memcache.Client(['127.0.0.1:11211'], debug=0)
+            mc.set(str(netcard1['nic_mac'].lower()), str(transid), 45*60)
 
     netcard2 = {}
     netcard2['nic_type'] = ostype_info.ec_nic_type
@@ -6116,6 +6122,8 @@ def rvd_get_rdp_para(request, srcid, dstid, insid):
         response['rdp_ip']     = runtime_option['rdp_ip']
         response['rdp_port']   = runtime_option['rdp_port']
         response['protocol']   = runtime_option['protocol']
+        netcard = runtime_option["networkcards"]
+        response['usb_ip']     = netcard[0]['nic_ip']
         retvalue = json.dumps(response)
         return HttpResponse(retvalue, content_type="application/json")
 
@@ -6133,16 +6141,24 @@ def rvd_get_rdp_url(request, srcid, dstid, insid):
     return rvd_get_rdp_para(request, srcid, dstid, insid)
 
 def vm_afterboot(request):
+    logger.error('call vm_afterboot')
     # find tid record for this vm instance
     mac = request.POST['mac']
+    mac = str(mac).lower()
+    logger.error('vm_afterboot -- mac=%s' % mac)
     bfind = False
+    netcard = {}
     try:
-        trec = ectaskTransaction.objects.get(mac=mac)
-        runtime_option = json.loads(trec.runtime_option)
+        mc = memcache.Client(['127.0.0.1:11211'], debug=0)
+        _tid = str(mc.get(str(mac)))
+        logger.error('vm_afterboot -- from memcache get tid = %s' % _tid)
+        rec = ectaskTransaction.objects.get(tid=_tid)
+        runtime_option = json.loads(rec.runtime_option)
         netcard = runtime_option["networkcards"][0]
+        logger.error("vm_afterboot -- get netcard as %s" % json.dumps(netcard))
         bfind = True
     except Exception as e:
-        pass
+        logger.error('vm_afterboot -- exception = %s' % str(e))
 
     response = {}
     if not bfind:
@@ -6153,8 +6169,8 @@ def vm_afterboot(request):
         elif netcard["nic_mode"] == "bridge":
             response["Result"] = "OK"
             vmfile = 'afterboot.py'
-            #filepath = '/usr/local/webconfig/%s' % vmfile
-            filepath = '/storage/config/%s' % vmfile
+            filepath = '/usr/local/webconfig/%s' % vmfile
+            #filepath = '/storage/config/%s' % vmfile
             with open(filepath, 'r') as myfile:
                 mycontent = myfile.readlines()
 
@@ -6169,9 +6185,11 @@ def vm_afterboot(request):
             # set ip/mask/gateway
             myscript = myscript.replace("IPFLAG", "yes")
             myscript = myscript.replace("new-host-ipaddr",    netcard["nic_ip"])
+            logger.error('vm_afterboot -- new ip  = %s' % netcard["nic_ip"])
             myscript = myscript.replace("new-host-ipmask",    netcard["nic_mask"])
             myscript = myscript.replace("new-host-ipgateway", netcard["nic_gateway"])
             myscript = myscript.replace("new-host-dns",       netcard["nic_dns"])
+            myscript = myscript.replace("new-host-mac",       mac)
             myscript = myscript.replace("BOOTFLAG",           netcard["nic_reboot"])
 
             response['filename'] = vmfile
@@ -6179,3 +6197,26 @@ def vm_afterboot(request):
 
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
+
+from django.conf import global_settings
+def set_django_debug(request):
+    response = {}
+    response['msg'] = "DEBUG and TEMPLATE_DEBUG is enabled"
+    response['Result'] = "OK"
+    retvalue = json.dumps(response)
+    return HttpResponse(retvalue, content_type="application/json")
+
+def get_django_debug(request):
+    response = {}
+    response['Result'] = "OK"
+    if global_settings.DEBUG== False:
+        response['ret'] = "no"
+    else:
+        response['ret'] = "yes"
+    retvalue = json.dumps(response)
+    return HttpResponse(retvalue, content_type="application/json")
+
+
+
+def set_log_level(request):
+    pass

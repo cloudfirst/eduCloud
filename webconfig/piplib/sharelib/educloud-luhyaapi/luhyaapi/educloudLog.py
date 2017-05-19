@@ -4,7 +4,6 @@ import logging.handlers
 MAX_LOGFILE_BYTE = 10 * 1024 * 1024
 MAX_LOG_COUNT = 10
 
-
 def set_log_level(level, loggername='luhya'):
     logger = logging.getLogger(loggername)
     if level == 'error':

@@ -551,6 +551,9 @@ function show_by_xfreerdp( id ) {
             cmd = '/opt/freerdp-nightly/bin/xfreerdp /f /v:' + items['rdp_ip'] + ':' + items['rdp_port'];
             if (protocol == "NDP") {
                 cmd = '/usr/bin/ndpclient -h ' + items['rdp_ip'] + ' -p ' + items['rdp_port'];
+                if (items['usb_ip'] != "") {
+                	cmd = cmd + " --usb-ip " + items['usb_ip'];
+                }
             }
             if (protocol == "SPICE") {
                 cmd = '/usr/bin/spicec -h ' + items['rdp_ip'] + ' -p ' + items['rdp_port'];
