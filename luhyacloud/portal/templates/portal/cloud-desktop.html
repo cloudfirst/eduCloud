@@ -2,6 +2,16 @@
 {% load i18n %}
 {% load staticfiles %}
 
+{% block login %}
+	<li style=”display:inline”>
+		<a href="#" onclick="editPassword()">{% trans " Edit Password" %}</a>
+		<div id="uid"   style="display: none;">{{ uid }}</div>
+	</li>
+	<li style=”display:inline”>
+		<a href="/portal/user_logout">{% trans " Logout" %}</a>
+	</li>
+{% endblock %}
+
 {% block content %}
 <link href="{% static "clc/plupload-2.1.2/js/jquery.plupload.queue/css/jquery.plupload.queue.css" %}" rel="stylesheet">
 <link href="{% static "clc/zTree_v3/css/zTreeStyle/zTreeStyle.css" %}" rel="stylesheet">
@@ -39,8 +49,9 @@
                             <button type="button" id="show_{{ vd.id }}"  onclick="display_vm_window( '{{ vd.id }}' );"       class="btn" >{% trans "Show" %}</button>
 
                             <div id="taskid_for_show_in_browser_{{ vd.id }}" style="display:none;">{{ vd.tid }}</div>
+							<div><p id="prepare_{{ vd.id }}">像文件准备中，请稍候再刷新</p></div>
 
-                            <button type="button" id="stop_{{ vd.id }}" onclick="stop_tvd('{{ vd.id }}');"   class="btn ">{% trans "Stop" %}</button>
+                            <button type="button" id="stop_{{ vd.id }}" onclick="stop_tvd('{{ vd.id }}');"   class="btn">{% trans "Stop" %}</button>
 
 	        			</div>
 	        		</div>
@@ -330,6 +341,7 @@ function run_tvd(id, taskid) {
     postdata = {
         'sid': $('#sid').text(),
     }
+
     $.post(url, postdata, function (data) {
         items = [];
         $.each(data, function (key, val) {
@@ -386,6 +398,27 @@ function sleep(sleepTime) {
     for (var start = Date.now(); Date.now() - start <= sleepTime;) {}
 }
 
+function stop_task(taskid) {
+    //console.log("delete_task() is called.");
+
+	tmp = taskid.split(':')
+    srcid = tmp[0];
+    dstid = tmp[1];
+    insid = tmp[2];
+    url = stop_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
+    postdata = {
+        'sid': $('#sid').text(),
+    }
+
+    $.post(url, postdata, function (data) {
+        items = [];
+        $.each(data, function (key, val) {
+            items[key] = val;
+        });
+
+        location.reload();
+    });
+}
 
 function delete_task(taskid) {
     //console.log("delete_task() is called.");
@@ -413,7 +446,16 @@ function delete_task(taskid) {
 function stop_tvd(id) {
     //console.log("stop_tvd() is called.");
     taskid = $('#taskid_for_show_in_browser_' + id ).text();
-    delete_task(taskid);
+	insid = taskid.split(":")[2]
+	if (insid.indexOf("VD") == 0) {
+		delete_task(taskid);
+	}
+	if (insid.indexOf("PVD") == 0) {
+		stop_task(taskid);
+	}
+	if (insid.indexOf("TVD") == 0) {
+    	delete_task(taskid);
+    }
 }
 
 
@@ -509,6 +551,9 @@ function show_by_xfreerdp( id ) {
             cmd = '/opt/freerdp-nightly/bin/xfreerdp /f /v:' + items['rdp_ip'] + ':' + items['rdp_port'];
             if (protocol == "NDP") {
                 cmd = '/usr/bin/ndpclient -h ' + items['rdp_ip'] + ' -p ' + items['rdp_port'];
+                if (items['usb_ip'] != "") {
+                	cmd = cmd + " --usb-ip " + items['usb_ip'];
+                }
             }
             if (protocol == "SPICE") {
                 cmd = '/usr/bin/spicec -h ' + items['rdp_ip'] + ' -p ' + items['rdp_port'];
@@ -542,9 +587,9 @@ function gui_update(items, do2run) {
 
     if (phase == 'preparing') {
         if ( state == 'init') {
-            $('#run_'  + id).removeClass('disabled');
+            $('#run_'  + id).addClass('disabled');
             $('#show_' + id).addClass('disabled');
-            $('#stop_' + id).addClass('disabled');
+            $('#stop_' + id).removeClass('disabled');
 
             $('#progress_' + id).css('display', 'none');
             $('#error_msg_' + id).css('display', 'none');
@@ -559,7 +604,7 @@ function gui_update(items, do2run) {
         else if (state == 'downloading' || state == "cloning") {
             $('#run_'  + id).addClass('disabled');
             $('#show_' + id).addClass('disabled');
-            $('#stop_' + id).addClass('disabled');
+            $('#stop_' + id).removeClass('disabled');
 
             $('#progress_'    + id).css('display', 'block');
             $('#progressbar_' + id).css('width', progress + '%');
@@ -574,9 +619,9 @@ function gui_update(items, do2run) {
         }
 
         else if (state == 'done') {
-            $('#run_'  + id).removeClass('disabled');
+            $('#run_'  + id).addClass('disabled');
             $('#show_' + id).addClass('disabled');
-            $('#stop_' + id).addClass('disabled');
+            $('#stop_' + id).removeClass('disabled');
 
             $('#progress_' + id).css('display', 'none');
             $('#error_msg_' + id).css('display', 'none');
@@ -611,7 +656,7 @@ function gui_update(items, do2run) {
         else if (state == 'booting') {
             $('#run_'  + id).addClass('disabled');
             $('#show_' + id).addClass('disabled');
-            $('#stop_' + id).addClass('disabled');
+            $('#stop_' + id).removeClass('disabled');
 
             $('#progress_' + id).css('display', 'none');
 
@@ -632,6 +677,7 @@ function gui_update(items, do2run) {
             $('#error_msg_' + id).css('display', 'none');
 
             $('#taskid_for_show_in_browser_' + id).text(taskid);
+            display_vm_window(id);
         }
 
         else {
@@ -644,20 +690,41 @@ function init_GUI() {
     var data = {};
     {% for vd in vds %}
         {% if vd.tid == '' %}
-            $('#show_{{ vd.id }}').removeClass('disabled');
+            $('#run_{{ vd.id }}').removeClass('disabled');
             $('#show_{{ vd.id }}').addClass('disabled');
             $('#stop_{{ vd.id }}').addClass('disabled');
         {% else %}
-            data['id']      = '{{ vd.id }}'
-            data['phase']   = '{{ vd.phase }}';
-            data['state']   = '{{ vd.state}}';
-            data['tid']     = '{{ vd.tid }}',
-            data['promt']   = '';
-            data['errormsg']= '';
-            data['failed']  = 0;
-            data['progress']= 0;
+        	data['phase']   = '{{ vd.phase }}';
+			data['state']   = '{{ vd.state}}';
+			data['tid']     = '{{ vd.tid }}',
+        	insid = data['tid'].split(":")[2]
+        	if ((insid.indexOf("VD") == 0 || insid.indexOf("PVD") == 0) && data['phase'] == "" && data['state'] == "" ) {
+				$('#run_{{ vd.id }}').removeClass('disabled');
+            	$('#show_{{ vd.id }}').addClass('disabled');
+            	$('#stop_{{ vd.id }}').addClass('disabled');
+        	} else {
+        		data['id']      = '{{ vd.id }}'
+				data['promt']   = '';
+				data['errormsg']= '';
+				data['failed']  = 0;
+				data['progress']= 0;
 
-            gui_update(data, 0);
+				gui_update(data, 0);
+        	}
+        {% endif %}
+
+        {% if vd.datadisk != 'ready' or vd.systemdisk != 'ready' %}
+        	$('#run_{{ vd.id }}').hide();
+        	$('#show_{{ vd.id }}').hide();
+        	$('#stop_{{ vd.id }}').hide();
+        	$('#prepare_{{ vd.id}}').show();
+
+        	$('#progress_{{ vd.id }}').css('display', 'block');
+        	progress = ({{ vd.dataper }} + {{ vd.systemper }})/2;
+            $('#progressbar_{{ vd.id }}').css('width', progress + '%');
+            $('#progressbar_{{ vd.id }}').text(progress + '%');
+        {% else %}
+        	$('#prepare_{{ vd.id}}').hide();
         {% endif %}
     {% endfor%}
 }
@@ -893,6 +960,14 @@ function add_prv_leaf(parent_node_name, filename) {
     var pnode = zTree.getNodeByParam("name", parent_node_name, null);
     zTree.addNodes(pnode, { name:filename, isParent:false } );
 };
+
+function editPassword() {
+	u_name = $('#uid').text()
+	url="/clc/user/edit_password/" + u_name;
+	var left = ($(window).width() / 2) - (800 / 2);
+	var top = ($(window).height() / 2) - (600 / 2);
+	window.open(url, '', 'height=550,width=650,left=' + left + ',top=' + top);
+}
 
 $(document).ready(function () {
      init_GUI();

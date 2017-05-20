@@ -17,14 +17,15 @@
     // there are below mode available for configuration
     // mode 1: lvd, nothing to configure
 
-    // mode 2: rvd + flat
+    // mode 2: rvd + flat  only implement this
     // - configure rdp port
+    // - configure ip pool
 
     // mode 3: rvd + tree
     // - configure rdp port
     // - configure iptable rule when vm is running
 
-    // mode 4: vs  + flat + shared dhcp
+    // mode 4: vs  + flat + shared dhcp / static ip
     // - configure rdp port
     // - configure ethers
 
@@ -58,11 +59,11 @@
     }
 
     function enterRVDflatMode() {
-        $('#network_mode_config').css("display","block");
+        //$('#network_mode_config').css("display","block");
         $('#dhcp_type_config').css("display","none");
 
         $('#rdp_port_config').css("display","block");
-        $('#dhcp_ip_config').css("display","none");
+        $('#dhcp_ip_config').css("display","block");
         $('#dhcp_if_config').css("display","none");
         $('#ethers_config').css("display","none");
         $('#pub_ip_config').css("display","none");
@@ -297,13 +298,13 @@
                         <div id="usage_init_value" style="display:none">{{ ccres.cc_usage }}</div>
                         <label>{% trans "Cluster Usage" %}</label>
                         <select id="cluster_usage" class="form-control">
-                            <option value="lvd">{% trans "Local Cloud Desktop" %}</option>
+                            <!--<option value="lvd">{% trans "Local Cloud Desktop" %}</option>-->
                             <option value="rvd">{% trans "Remote Cloud Desktop" %}</option>
-                            <option value="vs">{% trans "Cloud Virtual Server" %}</option>
+                            <!--<option value="vs">{% trans "Cloud Virtual Server" %}</option>-->
                         </select>
                     </div>
 
-                    <div id="network_mode_config">
+                    <div id="network_mode_config" style="display:none">
                         <div class="form-group">
                             <div id="network_mode_init_value" style="display:none">{{ ccres.network_mode }}</div>
                             <label>{% trans "Network Mode" %}</label>

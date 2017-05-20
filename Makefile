@@ -12,6 +12,7 @@ WEB_CLC         =debian/educloud-clc
 WEB_WALRUS      =debian/educloud-walrus
 WEB_CC          =debian/educloud-cc
 WEB_VIRTAPP     =debian/educloud-virtapp
+WEB_BIZRULE     =debian/educloud-bizrule
 
 DAEMON_CLC      =debian/nodedaemon-clc
 DAEMON_WALRUS   =debian/nodedaemon-walrus
@@ -37,10 +38,12 @@ install:
 	####################
 	install -d $(EDU_CORE)/etc/educloud/modules
 	touch $(EDU_CORE)/etc/educloud/modules/core
+	cp $(CURDIR)/debian/educloud.conf                    $(EDU_CORE)/etc/educloud/modules/
 
 	install -d $(EDU_CORE)/usr/local/webconfig
 	cp    $(CURDIR)/debian/fuse.conf                       $(EDU_CORE)/usr/local/webconfig/
 	cp    $(CURDIR)/debian/sudoers                         $(EDU_CORE)/usr/local/webconfig/
+	cp    $(CURDIR)/debian/afterboot.py                    $(EDU_CORE)/usr/local/webconfig/
 	cp -r $(CURDIR)/webconfig/rsync                        $(EDU_CORE)/usr/local/webconfig/
 
 	#####################
@@ -77,7 +80,6 @@ install:
 	##################
 	install -d $(WEB_CLC)/etc/educloud/modules
 	touch $(WEB_CLC)/etc/educloud/modules/clc
-	cp $(CURDIR)/debian/educloud.conf                    $(WEB_CLC)/etc/educloud/modules/
 
 	install -d $(WEB_CLC)/usr/local/www/clc
 	python -m compileall $(CURDIR)/luhyacloud/clc/
@@ -126,6 +128,22 @@ install:
 	cp -r $(CURDIR)/luhyacloud/virtapp/templates             $(WEB_VIRTAPP)/usr/local/www/virtapp/
 	cp -r $(CURDIR)/luhyacloud/virtapp/sql                   $(WEB_VIRTAPP)/usr/local/www/virtapp/
 
+	######################
+	#     WEB_BIZRULE    #
+	######################
+	install -d $(WEB_BIZRULE)/etc/educloud/modules
+	touch $(WEB_BIZRULE)/etc/educloud/modules/bizrule
+
+	install -d $(WEB_BIZRULE)/usr/local/www/bizrule
+	python -m compileall $(CURDIR)/luhyacloud/bizrule/
+	mv $(CURDIR)/luhyacloud/bizrule/*.pyc                    $(WEB_BIZRULE)/usr/local/www/bizrule/
+	#cp $(CURDIR)/luhyacloud/bizrule/*.py                    $(WEB_BIZRULE)/usr/local/www/bizrule/
+
+	cp -r $(CURDIR)/luhyacloud/bizrule/conf                  $(WEB_BIZRULE)/usr/local/www/bizrule/
+	cp -r $(CURDIR)/luhyacloud/bizrule/templates             $(WEB_BIZRULE)/usr/local/www/bizrule/
+	cp -r $(CURDIR)/luhyacloud/bizrule/static                $(WEB_BIZRULE)/usr/local/www/bizrule/
+	cp -r $(CURDIR)/luhyacloud/bizrule/sql                   $(WEB_BIZRULE)/usr/local/www/bizrule/
+
 	##################################################
 	# when use pyinstaller to compile exeutable file,
 	# you must set dpkg-buildflags to avoid strip.
@@ -139,6 +157,9 @@ install:
 	install -d $(DAEMON_CLC)/usr/local/nodedaemon/clc
 	cd $(CURDIR)/nodeDaemon/clc && sudo -u luhya pyinstaller clc_status_consumer.py -F -s
 	cp $(CURDIR)/nodeDaemon/clc/dist/clc_status_consumer         $(DAEMON_CLC)/usr/local/nodedaemon/clc
+
+	cd $(CURDIR)/nodeDaemon/clc && sudo -u luhya pyinstaller clc_cmd_consumer.py -F -s
+	cp $(CURDIR)/nodeDaemon/clc/dist/clc_cmd_consumer         $(DAEMON_CLC)/usr/local/nodedaemon/clc
 
 	install -d $(DAEMON_CLC)/etc/supervisor/conf.d
 	cp $(CURDIR)/nodeDaemon/clc/supervisor/nodedaemon-clc.conf   $(DAEMON_CLC)/etc/supervisor/conf.d
@@ -173,7 +194,6 @@ install:
 	####################
 	install -d $(DAEMON_NC)/etc/educloud/modules
 	touch $(DAEMON_NC)/etc/educloud/modules/nc
-	cp $(CURDIR)/debian/educloud.conf                    $(DAEMON_NC)/etc/educloud/modules/
 
 	install -d $(DAEMON_NC)/usr/local/nodedaemon/nc
 
@@ -190,17 +210,3 @@ install:
 	install -d $(DAEMON_NC)/usr/local/bin
 	cd $(CURDIR)/webconfig/serverTools/ && sudo -u luhya pyinstaller recoverVMfromCrash.py -F -s
 	cp $(CURDIR)/webconfig/serverTools/dist/recoverVMfromCrash             $(DAEMON_NC)/usr/local/bin/
-
-	####################
-	#     DAEMON_TNC   #
-	####################
-	install -d $(DAEMON_TNC)/etc/educloud/modules
-	touch $(DAEMON_TNC)/etc/educloud/modules/core
-
-	install -d $(DAEMON_TNC)/usr/local/nodedaemon/
-
-	cd $(CURDIR)/nodeDaemon/tnc && sudo -u luhya pyinstaller tnc_daemon.py -F -s
-	cp $(CURDIR)/nodeDaemon/tnc/dist/tnc_daemon            $(DAEMON_TNC)/usr/local/nodedaemon/tnc
-
-	install -d $(DAEMON_TNC)/usr/local/bin/
-	cp $(CURDIR)/webconfig/scripts/nodedaemon-tnc          $(DAEMON_TNC)/usr/local/bin

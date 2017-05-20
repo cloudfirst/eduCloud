@@ -63,6 +63,8 @@ class ecOSTypes(models.Model):
     # Linux:    Ubuntu, Ubuntu_64
     # ostype already include 32/64bit information
     ec_ostype      = models.CharField(max_length=20)
+    ec_memory      = models.IntegerField(default=1)
+    ec_cpus        = models.IntegerField(default=1)
     ec_disk_type   = models.CharField(max_length=100)
     ec_nic_type    = models.CharField(max_length=100)
     ec_audio_para  = models.CharField(max_length=100)
@@ -368,6 +370,7 @@ class ectaskTransaction(models.Model):
     progress    = models.IntegerField(default=0)   # 0(default)-100, -100, <0
     ccip        = models.CharField(max_length=100)
     ncip        = models.CharField(max_length=100)
+    mac         = models.CharField(max_length=20)
     runtime_option = models.TextField()
     message     = models.TextField()
     completed   = models.BooleanField(default=False)

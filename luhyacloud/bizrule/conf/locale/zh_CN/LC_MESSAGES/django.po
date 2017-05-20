@@ -1,0 +1,93 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-04-03 09:55+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: aim_rule.py:133
+msgid " is not a valid ip address"
+msgstr " 不是有效的IP地址"
+
+#: aim_rule.py:138
+msgid " is not a valid network mask"
+msgstr " 不是有效的网络掩码"
+
+#: aim_rule.py:143
+msgid " is not a valid gateway address"
+msgstr " 不是有效的网关地址"
+
+#: aim_rule.py:148
+msgid " is not a valid mac address, sample is 0800275eb57d"
+msgstr " 不是有效的mac地址，示例为0800275eb57d"
+
+#: aim_rule.py:153
+msgid " is not a valid network preifx, sample is 192.168.1"
+msgstr " 不是有效的网络前缀，示例为192.168.1"
+
+#: aim_rule.py:158
+msgid " is not a valid dns address"
+msgstr " 不是有效的dns地址"
+
+#: aim_rule.py:163
+msgid " is not a valid lambda expression"
+msgstr " 不是有效的lambda表达式"
+
+#: aim_rule.py:169
+msgid " is not a reboot value, sample either yes or no"
+msgstr " reboot的取值只能是yes或者no"
+
+#: postlogin_rule.py:81
+msgid " is not an valid image name"
+msgstr " 不是有效的镜像文件名"
+
+#: views.py:48
+msgid "PostLogin Rules"
+msgstr "登录后镜像文件过滤规则"
+
+#: views.py:123
+msgid "VM Schedule Rules"
+msgstr "虚拟机调度规则"
+
+#: views.py:195
+msgid "Account/IP/MAC Rules"
+msgstr "IP地址分配规则"
+
+#: vmschedule_rule.py:125
+msgid " is not an valid nc ip"
+msgstr " 不是有个有效的nc ip地址"
+
+#: vmschedule_rule.py:127
+msgid " is not an valid cluster name"
+msgstr " 不是有效的集群名称"
+
+#: templates/bizrule/aim.html:6 templates/bizrule/postlogin.html:6
+#: templates/bizrule/vmschedule.html:6
+msgid "Submit Button"
+msgstr "提交"
+
+#: templates/bizrule/aim.html:7 templates/bizrule/postlogin.html:7
+#: templates/bizrule/vmschedule.html:7
+msgid "Add Rule"
+msgstr "添加新规则"
+
+#: templates/bizrule/aim.html:12 templates/bizrule/postlogin.html:13
+#: templates/bizrule/vmschedule.html:12
+msgid "New Rules are submitted Successfully."
+msgstr "新规则提交成功！"
+
+#: templates/bizrule/aim.html:15 templates/bizrule/postlogin.html:16
+#: templates/bizrule/vmschedule.html:15
+msgid "Submitting rules Failed, try again."
+msgstr "新规则提交失败！"

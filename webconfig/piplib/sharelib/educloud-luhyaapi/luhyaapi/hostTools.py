@@ -1,23 +1,15 @@
 import socket, netifaces, psutil, shutil
-from luhyaTools import configuration
-from settings import *
+
 import random, os, commands, time
 from linux_metrics import cpu_stat
 from sortedcontainers import SortedList
 from IPy import IP
 
 from luhyaapi.educloudLog import *
+from luhyaapi.settings import *
 logger = getclclogger()
 
-NC_CMD_QUEUE_PORT = 9999
 
-import zmq
-def zmq_send(ip, msg, port):
-    context = zmq.Context()
-    socket = context.socket(zmq.PAIR)
-    socket.connect("tcp://%s:%s" % (ip,port))
-
-    socket.send(msg)
 
 # PUBLIC or PRIVATE
 def getIPType(ipaddr):
@@ -25,11 +17,15 @@ def getIPType(ipaddr):
     return ip.iptype()
 
 def parseTID(tid):
-    _tmp = tid.spit(':')
+    _tmp = tid.split(':')
     return _tmp[0], _tmp[1], _tmp[2]
 
 def addUserPrvDataDir(uid):
-    path = '/storage/space/prv-data/%s' % uid
+    path = '/storage/space/prv-data/%s/disk' % uid
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    path = '/storage/space/prv-data/%s/data' % uid
     if not os.path.exists(path):
         os.makedirs(path)
 

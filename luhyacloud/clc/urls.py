@@ -43,6 +43,7 @@ urlpatterns = patterns('',
 
     url(r'^tasks$',         views.tasks_view,                         name='tasks_view'),
     url(r'^tools$',         views.tools_view,                         name='tools_view'),
+    url(r'^tools/post_image_upload$',    views.tools_post_image_upload,                       name='tools_post_image_upload'),
     url(r'^tools/image_upload$',         views.tools_image_upload,                       name='tools_image_upload'),
     url(r'^tools/file_upload$',          views.tools_file_upload,                        name='tools_file_upload'),
     url(r'^tools/prv_upload/(?P<uid>\w+)$',           views.tools_prv_upload,                         name='tools_prv_upload'),
@@ -57,6 +58,7 @@ urlpatterns = patterns('',
 
     url(r'^user/edit_profile/(?P<uid>\w+)$',                    views.edit_profile,              name='edit_profile'),
     url(r'^user/edit_password/(?P<uid>\w+)$',                   views.edit_password,             name='edit_password'),
+    url(r'^user/edit_password_by_admin/(?P<uid>\w+)$',          views.edit_password_by_admin,    name='edit_password_by_admin'),
     url(r'^user/activate/(?P<uid>\w+)$',                        views.activate_user,             name='activate_user'),
 
     # image create and modify URL
@@ -68,6 +70,7 @@ urlpatterns = patterns('',
 
     url(r'^image/create/task/run/(?P<srcid>\w+)/(?P<dstid>\w+)/(?P<insid>\w+)$',                                views.image_create_task_run,                    name='image_create_task_run'),
     url(r'^image/create/task/stop/(?P<srcid>\w+)/(?P<dstid>\w+)/(?P<insid>\w+)$',                               views.image_create_task_stop,                   name='image_create_task_stop'),
+    url(r'^image/ndp/stop$',                                                                                    views.image_ndp_stop,                           name='image_ndp_stop'),
     url(r'^image/create/task/getvmstatus/(?P<srcid>\w+)/(?P<dstid>\w+)/(?P<insid>\w+)$',                        views.image_create_task_getvmstatus,            name='image_create_task_getvmstatus'),
     url(r'^image/create/task/updatevmstatus/(?P<srcid>\w+)/(?P<dstid>\w+)/(?P<insid>\w+)/(?P<vmstatus>\w+)$',   views.image_create_task_updatevmstatus,         name='image_create_task_updatevmstatus'),
 
@@ -136,7 +139,7 @@ urlpatterns = patterns('',
     url(r'^api/1.0/rvd/display/(?P<srcid>\w+)/(?P<dstid>\w+)/(?P<insid>\w+)$',          views.rvd_display,            name='rvd_display'),
     url(r'^api/1.0/rvd/get_rdp_url/(?P<srcid>\w+)/(?P<dstid>\w+)/(?P<insid>\w+)$',      views.rvd_get_rdp_url,        name='rvd_get_rdp_url'),
     url(r'^api/1.0/vm/get_rdp_para/(?P<srcid>\w+)/(?P<dstid>\w+)/(?P<insid>\w+)$',      views.rvd_get_rdp_para,       name='rvd_get_rdp_para'),
-
+    url(r'^api/1.0/vm/afterboot',                                                       views.vm_afterboot,           name='vm_afterboot'),
 
     # API v1.0 for system administration
     # system setting table ops by POST
@@ -256,10 +259,14 @@ urlpatterns = patterns('',
     url(r'^api/1.0/account/reset_password$',     views.account_reset_password,              name='account_reset_password'),
 
     url(r'^api/1.0/perm/update$',     views.perm_update,                     name='perm_update'),
+    url(r'^api/1.0/perm/delete$',     views.perm_delete,                     name='perm_delete'),
     url(r'^api/1.0/software/op$',     views.software_operation,              name='software_operation'),
     url(r'^api/1.0/prv_data/op/(?P<uid>\w+)$',     views.prv_data_operation,              name='prv_data_operation'),
     url(r'^api/1.0/vrde$',     views.rdp_web_client,              name='rdp_web_client'),
 
+    url(r'^api/1.0/set_django_debug$',      views.set_django_debug,           name='set_django_debug'),
+    url(r'^api/1.0/get_django_debug$',      views.get_django_debug,           name='get_django_debug'),
 
+    url(r'^api/1.0/set_log_level$',         views.set_log_level,              name='set_log_level'),
 
     )

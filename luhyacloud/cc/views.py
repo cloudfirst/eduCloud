@@ -14,10 +14,10 @@ import commands
 from datetime import datetime
 
 from luhyaapi.educloudLog import *
-from luhyaapi.luhyaTools import configuration
 from luhyaapi.hostTools import *
 from luhyaapi.rabbitmqWrapper import *
 from luhyaapi.clcAPIWrapper import *
+from luhyaapi.zmqWrapper import *
 
 
 logger = getcclogger()
@@ -290,4 +290,3 @@ def delete_tasks(request):
 
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
-

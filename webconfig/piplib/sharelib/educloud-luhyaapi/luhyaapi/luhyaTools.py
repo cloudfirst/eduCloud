@@ -1,59 +1,110 @@
 # coding=UTF-8
 
-import os, socket, commands, string, sys
+import os, socket, commands, string, sys, json
 from threading import *
-import ConfigParser
+
+from luhyaapi.hostTools import *
+from luhyaapi.zmqWrapper import *
+from luhyaapi.educloudLog import *
+from luhyaapi.settings import *
+
+logger = geteducloudlogger()
 
 GUEST_USERNAME = "Administrator"
 GUEST_PASSWORD = "luhya"
 SNAPSHOT_NAME = "thomas"
 
+# check existence of data disk,
+# othervwise clone it
+# ready: img file is ready
+# prepare: img file is cloning
+# none: img file is not exist
+def makeDataDiskReady(tid, uid):
+    logger.error("enter makeDataDiskReady ... ...")
+    imgid, dstid, insid = parseTID(tid)
+
+    origin_disk = '/storage/images/%s/data' % imgid
+    logger.error("origin_disk = %s" % origin_disk)
+    cloned_disk = '/storage/space/prv-data/%s/disk/%s/data' % (uid, imgid)
+    logger.error("cloned_disk = %s" % cloned_disk)
+    if os.path.exists(cloned_disk):
+        origin_size = os.path.getsize(origin_disk)
+        cloned_size = os.path.getsize(cloned_disk)
+        if origin_size <= cloned_size:
+            flag = "ready"
+            per = 100
+        else:
+            flag = "prepare"
+            per = (cloned_size * 100 / origin_size)
+
+    else:
+        flag = "none"
+        per = 0.0
+
+    if flag == "none":
+        message = {}
+        message['type'] = "cmd"
+        message['op'] = 'clonehd/ddisk'
+        message['tid'] = tid
+        message['uid'] = uid
+
+        _message = json.dumps(message)
+        zmq_send('127.0.0.1', _message, CLC_CMD_QUEUE_PORT)
+        logger.error("--- --- ---zmq: send clonehd/ddisk cmd to clc sucessfully")
+
+    logger.error("makeDataDiskReady tid= %s flag = %s" % (tid,flag))
+    return flag, per
+
+
+# check existence of system disk,
+# otherwise clone it
+# assuming insid = PVDxxx
+def makeSystemDiskReady(tid, uid):
+    logger.error("enter makeSystemDiskReady ... ...")
+    flag = 'none'
+    imgid, dstid, insid = parseTID(tid)
+    origin_disk = '/storage/images/%s/machine' % imgid
+    cloned_disk = '/storage/pimages/%s/%s/machine' % (uid, imgid)
+    # create persistent C disk for PVD
+    if os.path.exists(cloned_disk):
+        origin_size = os.path.getsize(origin_disk)
+        cloned_size = os.path.getsize(cloned_disk)
+        if origin_size <= cloned_size:
+            flag = "ready"
+            per = 100
+        else:
+            flag = "prepare"
+            per = (cloned_size * 100 / origin_size)
+    else:
+        flag = "none"
+        per = 0
+
+    if flag == 'none':
+        message = {}
+        message['type'] = "cmd"
+        message['op'] = 'clonehd/pvd'
+        message['tid'] = tid
+        message['uid'] = uid
+
+        _message = json.dumps(message)
+        zmq_send('127.0.0.1', _message, CLC_CMD_QUEUE_PORT)
+        logger.error("--- --- ---zmq: send clonehd/pvd cmd to clc sucessfully")
+
+    logger.error("makeSystemDiskReady tid= %s flag = %s" % (tid, flag))
+    return flag, per
+
+def isImageWithDDisk(imgid):
+    ddisk_file = '/storage/images/%s/data' % imgid
+    return os.path.exists(ddisk_file)
+
 def execute_cmd(cmd_line, needsplit=True):
     out = commands.getoutput(cmd_line)
     return out
 
-class configuration():
-    def __init__(self, conf):
-        self.cf = None
-        self.filename = conf
-
-        if os.path.exists(self.filename):
-            self.cf = ConfigParser.ConfigParser()
-            self.cf.read(self.filename)
-
-    def getvalue(self, section, name):
-        if self.cf:
-            return self.cf.get(section, name)
-        else:
-            return None
-
-    def setvalue(self, section, name, value):
-        if self.cf:
-            return self.cf.set(section, name, value)
-        else:
-            return None
 
 
-class vmattributes():
-    def __init__(self, vmattrfile):
-        self.cf = None
-        self.filename = vmattrfile
-        if os.path.exists(self.filename):
-            self.cf = ConfigParser.ConfigParser()
-            self.cf.read(self.filename)
 
-    def getvalue(self, section, name):
-        if self.cf != None:
-            return self.cf.get(section, name)
-        else:
-            return 0
 
-    def setvalue(self, section, name, value):
-        if self.cf != None:
-            self.cf.set(section, name, value)
-            self.cf.write(open(self.filename, "w"))
-        else:
-            return None
 
 class luhyaTools():
     def __init__(self, imageID, name, rootdir):

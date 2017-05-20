@@ -1,6 +1,31 @@
 import os, commands, sys, getopt
 import time
 
+def restore_apt():
+    if os.path.exists('/etc/apt/sources.list.luhya'):
+        cmd_line = 'sudo cp /etc/apt/sources.list.luhya /etc/apt/sources.list'
+        commands.getoutput(cmd_line)
+
+        cmd_line = 'sudo rm /etc/apt/sources.list.luhya'
+        commands.getoutput(cmd_line)
+
+def prepare():
+    cmd_line = "sudo apt-get install wget curl"
+    os.system(cmd_line)
+
+def chownDir():
+    cmd_line = 'sudo chown -R luhya:luhya /storage && sudo chmod -R 777 /storage'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /usr/local/www && sudo chmod -R 777 /usr/local/www'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /usr/local/nodedaemon && sudo chmod -R 777 /usr/local/nodedaemon'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /usr/local/webconfig && sudo chmod -R 777 /usr/local/webconfig'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /var/log/educloud'
+    commands.getoutput(cmd_line)
+
+
 def checkPackage( pname ):
     cmd_line = 'dpkg -l | grep %s' % pname
     output = commands.getoutput(cmd_line)
@@ -13,6 +38,8 @@ def usage():
     print "Usage : allinone-install [-h hostip -v [vbox|ndp|kvm]]"
 
 def main(argv):
+    prepare()
+
     DST_IP = '121.41.80.147'
     HYPERVISOR = 'ndp'
     MODE = "w"
@@ -114,6 +141,7 @@ def main(argv):
         os.system('sudo mkdir /storage')
     if not os.path.exists('/storage/images'):
         os.system('sudo mkdir -p /storage/images')
+        os.system('sudo mkdir -p /storage/pimages')
         os.system('sudo mkdir -p /storage/VMs')
         os.system('sudo mkdir -p /storage/config')
         os.system('sudo mkdir -p /storage/space')
@@ -148,7 +176,7 @@ def main(argv):
     ##############################################################################
     # 7. install educloud in one machine by apt-get
     ##############################################################################
-    cmd_line = 'sudo apt-get -y install educloud-portal nodedaemon-clc nodedaemon-walrus nodedaemon-cc educloud-virtapp'
+    cmd_line = 'sudo apt-get -y install educloud-portal nodedaemon-clc nodedaemon-walrus nodedaemon-cc educloud-virtapp educloud-bizrule'
     os.system(cmd_line)
 
     if HYPERVISOR == "ndp":
@@ -173,14 +201,7 @@ def main(argv):
         cmd_line = 'sudo apt-get -y install nodedaemon-nc-kvm'
         os.system(cmd_line)
 
-    cmd_line = 'sudo chown -R luhya:luhya /storage && sudo chmod -R 777 /storage'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/www && sudo chmod -R 777 /usr/local/www'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/nodedaemon && sudo chmod -R 777 /usr/local/nodedaemon'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /var/log/educloud'
-    commands.getoutput(cmd_line)
+    chownDir()
 
     # verify deb package install status
     if checkPackage('educloud-core') == False:
@@ -332,14 +353,8 @@ def main(argv):
     cmd_line = 'sudo rm /var/cache/apt/archives/partial/*.deb'
     commands.getoutput(cmd_line)
 
-    cmd_line = 'sudo chown -R luhya:luhya /storage && sudo chmod -R 777 /storage'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/www && sudo chmod -R 777 /usr/local/www'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/nodedaemon && sudo chmod -R 777 /usr/local/nodedaemon'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /var/log/educloud'
-    commands.getoutput(cmd_line)
+    chownDir()
+    restore_apt()
 
     print '----------------------------------------------------------'
     print  'Now system will reboot to enable all services ... ... ...'

@@ -2,6 +2,7 @@ from luhyaapi.educloudLog import *
 from luhyaapi.hostTools import *
 from luhyaapi.rabbitmqWrapper import *
 from luhyaapi.vboxWrapper import *
+from luhyaapi.settings import *
 
 import time, psutil, requests
 
@@ -31,6 +32,7 @@ class nc_statusPublisher():
             logger.error('getServiceStatus exception = %s' % str(e))
         try:
             payload['hardware_data']    = getHostHardware()
+            logger.error("nc_statusPublisher-hardware data %s" % json.dumps(payload['hardware_data']))
         except Exception as e:
             logger.error('getHostHardware exception = %s' % str(e))
         try:
@@ -48,7 +50,8 @@ class nc_statusPublisher():
     def send_node_status_to_cc(self, node_status):
         simple_send(logger, self._ccip, 'cc_status_queue', json.dumps(node_status))
 
-
+# enhancement : http://www.tjansson.dk/2008/01/autofs-and-sshfs-the-perfect-couple/
+# use both sshfs and autofs
 def perform_mount():
     # mount cc's /storage/space/ to local
     if amIcc():

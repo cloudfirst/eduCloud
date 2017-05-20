@@ -1,9 +1,9 @@
 # coding=UTF-8
 
 import os
-from luhyaTools import *
-from educloudLog import *
-from hostTools import *
+from luhyaapi.luhyaTools import *
+from luhyaapi.educloudLog import *
+from luhyaapi.hostTools import *
 import json
 import subprocess
 
@@ -169,6 +169,7 @@ class vboxWrapper():
         vm_name = self._tool._vmname
         self._ostype = ostype
         cmd_line = VBOX_MGR_CMD + " createvm --name " + vm_name + " --ostype " + ostype + " --basefolder " + self._baseVMfolder
+        logger.error("cmd = %s" % cmd_line)
         ret = commands.getoutput(cmd_line)
         return ret
 
@@ -176,6 +177,7 @@ class vboxWrapper():
         vm_name = self._tool._vmname
         xmlfile = os.path.join(self._baseVMfolder, vm_name, vm_name + ".vbox")
         cmd_line = VBOX_MGR_CMD + " registervm " + xmlfile
+        logger.error("cmd = %s" % cmd_line)
         ret = commands.getoutput(cmd_line)
         return ret
 
@@ -186,6 +188,7 @@ class vboxWrapper():
             cmd_line = cmd_line + " --delete"
         logger.error("cmd = %s" % cmd_line)
         ret = commands.getoutput(cmd_line)
+        logger.error('cmd = %s' % cmd_line)
         return ret
 
 
@@ -323,6 +326,7 @@ class vboxWrapper():
         multi_str = ' --vrdemulticon on '
         cmd_line = VBOX_MGR_CMD + " modifyvm " + vm_name + video_str + video_qa + multi_str
         ret = commands.getoutput(cmd_line)
+        logger.error('cmd = %s' % cmd_line)
         return ret
 
     # in win7, run "mstsc /v:<ip:port>"
@@ -334,6 +338,7 @@ class vboxWrapper():
         portstr = " --vrdeport %d " % port
         cmd_line = VBOX_MGR_CMD + " modifyvm " + vm_name + enablestr + authstr + connectstr + portstr
         ret = commands.getoutput(cmd_line)
+        logger.error('cmd = %s' % cmd_line)
         return ret
 
     def SendCAD(self):
@@ -361,6 +366,7 @@ class vboxWrapper():
         logger.error("modifyvm paras = %s" % vmsettingstr)
 
         ret = commands.getoutput(cmd_line)
+        logger.error('cmd = %s' % cmd_line)
         return ret
 
     def getVMStorageCtrl(self, ostype):
@@ -389,7 +395,7 @@ class vboxWrapper():
         vm_name = self._tool._vmname
 
         cmd_line = VBOX_MGR_CMD + " storagectl " + vm_name + storagectl
-
+        logger.error("cmd = %s" % cmd_line)
         ret = commands.getoutput(cmd_line)
         return ret
 
@@ -418,7 +424,7 @@ class vboxWrapper():
             cmd_line = ['VBoxManage', 'storageattach', vm_name, '--storagectl', storageCtl, '--port', str(port), '--device', str(device), '--type', 'hdd', '--medium', imgfile, '--mtype', mtype]
             cmd_line = ' '.join(map(lambda x: '%s' % x, cmd_line))
             ret = commands.getoutput(cmd_line)
-            logger.error('add disk cmd = %s' % cmd_line)
+            logger.error('cmd = %s' % cmd_line)
         return ret
 
     # VBoxManage storageattach test  --storagectl IDE --port 1 --device 0 --type dvddrive --medium host:/dev/sr0 --mtype readonly --passthrough on
@@ -439,6 +445,7 @@ class vboxWrapper():
 
         cmd_line = VBOX_MGR_CMD + " sharedfolder add " + vm_name + " --name " + name  + " --hostpath " + path + " --automount "
         ret = commands.getoutput(cmd_line)
+        logger.error('cmd = %s' % cmd_line)
         return ret
 
     def isVMRegistered(self):
@@ -497,3 +504,23 @@ class vboxWrapper():
         cmd_line = cmd_line + authstr
         ret = commands.getoutput(cmd_line)
         return ret
+
+
+def getNotRunningVMs(insids):
+    logger.error("start getNotRunningVMs -------- ")
+    not_running_vms = []
+
+    vbox_cmd = VBOX_MGR_CMD + " list runningvms"
+    ndp_cmd  = 'ps -ef | grep ndp | grep %s | grep -v grep'
+    vbox_ret = commands.getoutput(vbox_cmd)
+    for insid in insids:
+        if insid in vbox_ret:
+            pass
+        else:
+            try:
+                ndp_ret = subprocess.check_output((ndp_cmd % insid), shell=True)
+            except Exception as e:
+                logger.error("%s is NOT running. " % insid)
+                not_running_vms.append(insid)
+
+    return not_running_vms

@@ -1,11 +1,8 @@
 import logging
 import logging.handlers
-from settings import *
-
 
 MAX_LOGFILE_BYTE = 10 * 1024 * 1024
 MAX_LOG_COUNT = 10
-
 
 def set_log_level(level, loggername='luhya'):
     logger = logging.getLogger(loggername)
@@ -31,7 +28,7 @@ DEBUG_LOG_FILE = '/var/log/educloud/luhya-debug.log'
 luhya_debug_logger = init_log(DEBUG_LOG_FILE)
 
 NC_DEBUG_LOG_FILE = '/var/log/educloud/nc.log'
-nc_debug_logger = init_log(NC_DEBUG_LOG_FILE)
+nc_debug_logger = init_log(NC_DEBUG_LOG_FILE, 'node')
 
 def getclcdaemonlogger():
     return luhya_debug_logger
