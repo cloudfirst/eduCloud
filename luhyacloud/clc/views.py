@@ -6140,6 +6140,7 @@ def rvd_get_rdp_url(request, srcid, dstid, insid):
 
     return rvd_get_rdp_para(request, srcid, dstid, insid)
 
+import random
 def vm_afterboot(request):
     logger.error('call vm_afterboot')
     # find tid record for this vm instance
@@ -6180,7 +6181,8 @@ def vm_afterboot(request):
 
             # set hostname
             myscript = myscript.replace("NAMEFLAG", "yes")
-            myscript = myscript.replace("new-host-name", runtime_option["user"])
+            hostname_tail = "%4x" % random.randint(0x0, 0xFFFF)
+            myscript = myscript.replace("new-host-name", runtime_option["user"] + "-" + hostname_tail.strip())
 
             # set ip/mask/gateway
             myscript = myscript.replace("IPFLAG", "yes")
