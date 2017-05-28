@@ -4527,7 +4527,8 @@ def delete_vds(request):
     else:
         # if PVD, need to delete image file
         if vds_rec.insid.find("PVD") == 0:
-            _path = "/storage/pimage/%s/%s" % (vds_rec.user, vds_rec.imageid)
+            _path = "/storage/pimages/%s/%s" % (vds_rec.user, vds_rec.imageid)
+            logger.error("delete_vds: path=" + _path)
             shutil.rmtree(_path)
             if os.path.exists(_path):
                 logger.error("%s is not really deleted." % _path)
