@@ -50,8 +50,8 @@
 
                             <div id="taskid_for_show_in_browser_{{ vd.id }}" style="display:none;">{{ vd.tid }}</div>
 							<div><p id="prepare_{{ vd.id }}">像文件准备中，请稍候再刷新</p></div>
-
                             <button type="button" id="stop_{{ vd.id }}" onclick="stop_tvd('{{ vd.id }}');"   class="btn">{% trans "Stop" %}</button>
+							<button type="button" id="restore_{{ vd.id }}" onclick="restore_tvd('{{ vd.id }}');"  class="btn">{% trans "Restore" %}</button>
 
 	        			</div>
 	        		</div>
@@ -458,6 +458,10 @@ function stop_tvd(id) {
     }
 }
 
+function restore_tvd(id) {
+	taskid = $('#taskid_for_show_in_browser_' + id ).text();
+	delete_task(taskid);
+}
 
 function errorMsgBox(msg) {
     alert(msg);
@@ -590,6 +594,7 @@ function gui_update(items, do2run) {
             $('#run_'  + id).addClass('disabled');
             $('#show_' + id).addClass('disabled');
             $('#stop_' + id).removeClass('disabled');
+            $('#restore_' + id).removeClass('disabled');
 
             $('#progress_' + id).css('display', 'none');
             $('#error_msg_' + id).css('display', 'none');
@@ -605,6 +610,7 @@ function gui_update(items, do2run) {
             $('#run_'  + id).addClass('disabled');
             $('#show_' + id).addClass('disabled');
             $('#stop_' + id).removeClass('disabled');
+            $('#restore_' + id).removeClass('disabled');
 
             $('#progress_'    + id).css('display', 'block');
             $('#progressbar_' + id).css('width', progress + '%');
@@ -622,6 +628,7 @@ function gui_update(items, do2run) {
             $('#run_'  + id).addClass('disabled');
             $('#show_' + id).addClass('disabled');
             $('#stop_' + id).removeClass('disabled');
+            $('#restore_' + id).removeClass('disabled');
 
             $('#progress_' + id).css('display', 'none');
             $('#error_msg_' + id).css('display', 'none');
@@ -642,6 +649,7 @@ function gui_update(items, do2run) {
             $('#run_'  + id).removeClass('disabled');
             $('#show_' + id).addClass('disabled');
             $('#stop_' + id).addClass('disabled');
+            $('#restore_' + id).addClass('disabled');
 
             $('#progress_' + id).css('display', 'none');
             $('#error_msg_' + id).css('display', 'none');
@@ -657,6 +665,7 @@ function gui_update(items, do2run) {
             $('#run_'  + id).addClass('disabled');
             $('#show_' + id).addClass('disabled');
             $('#stop_' + id).removeClass('disabled');
+            $('#restore_' + id).removeClass('disabled');
 
             $('#progress_' + id).css('display', 'none');
 
@@ -672,6 +681,7 @@ function gui_update(items, do2run) {
             $('#run_'  + id).addClass('disabled');
             $('#show_' + id).removeClass('disabled');
             $('#stop_' + id).removeClass('disabled');
+            $('#restore_' + id).removeClass('disabled');
 
             $('#progress_' + id).css('display', 'none');
             $('#error_msg_' + id).css('display', 'none');
@@ -693,15 +703,20 @@ function init_GUI() {
             $('#run_{{ vd.id }}').removeClass('disabled');
             $('#show_{{ vd.id }}').addClass('disabled');
             $('#stop_{{ vd.id }}').addClass('disabled');
+            $('#restore_{{ vd.id }}').hide();
         {% else %}
         	data['phase']   = '{{ vd.phase }}';
 			data['state']   = '{{ vd.state}}';
 			data['tid']     = '{{ vd.tid }}',
         	insid = data['tid'].split(":")[2]
+        	if (insid.indexOf("PVD") == 0) {
+        		$('#restore_{{ vd.id }}').show();
+        	}
         	if ((insid.indexOf("VD") == 0 || insid.indexOf("PVD") == 0) && data['phase'] == "" && data['state'] == "" ) {
 				$('#run_{{ vd.id }}').removeClass('disabled');
             	$('#show_{{ vd.id }}').addClass('disabled');
             	$('#stop_{{ vd.id }}').addClass('disabled');
+            	$('#restore_{{ vd.id }}').addClass('disabled');
         	} else {
         		data['id']      = '{{ vd.id }}'
 				data['promt']   = '';

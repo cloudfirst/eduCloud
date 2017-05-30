@@ -2076,7 +2076,7 @@ def genVMDisks(tid, usage, uid):
     if ins_id.find('PVD') == 0:
         trec = ectaskTransaction.objects.get(tid=tid)
 
-        c['file']    = '/storage/pimages/%s/%s/machine' % (uid, dst_imgid)
+        c['file'] = '/storage/images/%s/machine' % dst_imgid
         c['mtype']   = 'normal'
         disks.append(c)
 
@@ -4525,14 +4525,6 @@ def delete_vds(request):
         response['Result'] = 'FAIL'
         response['errormsg'] = "Need to delete this VM's running task first"
     else:
-        # if PVD, need to delete image file
-        if vds_rec.insid.find("PVD") == 0:
-            _path = "/storage/pimages/%s/%s" % (vds_rec.user, vds_rec.imageid)
-            logger.error("delete_vds: path=" + _path)
-            shutil.rmtree(_path)
-            if os.path.exists(_path):
-                logger.error("%s is not really deleted." % _path)
-
         # delete vds_auth records
         ecVDS_auth.objects.filter(insid=request.POST['insid']).delete()
         vds_rec.delete()
@@ -4557,8 +4549,6 @@ def update_vds(request):
             fake_tid = '%s:%s:%s' % (rec.imageid, rec.imageid, rec.insid)
             if isImageWithDDisk(rec.imageid):
                 makeDataDiskReady(fake_tid, rec.user)
-            if rec.insid.find("PVD") == 0:
-                makeSystemDiskReady(fake_tid, rec.user)
     except Exception as e:
         logger.error('update_vds error=%s' % str(e))
 
@@ -5901,11 +5891,8 @@ def list_myvds(request):
             vd['dataper'] = 100
 
         logger.error("start to prepare system disk of %s ... ..." % fake_tid)
-        if vds_rec.insid.find('PVD') == 0:
-            vd['systemdisk'], vd['systemper'] = makeSystemDiskReady(fake_tid, _user)
-        else:
-            vd['systemdisk'] = "ready"
-            vd['systemper'] = 100
+        vd['systemdisk'] = "ready"
+        vd['systemper'] = 100
 
         logger.error("system disk of VD/PVD is ready")
         vd['id'] = 'myvd' + str(index)

@@ -736,16 +736,42 @@ class runImageTaskThread(multiprocessing.Process):
                 logger.error("--- --- --- vboxmgr is not running")
                 # every time before running, take a NEW snapshot
                 snapshot_name = "thomas"
-                if self.runtime_option['run_with_snapshot'] == 1 and self.insid.find("PVD") != 0:
-                    if vboxmgr.isSnapshotExist(snapshot_name):
-                        if self.insid.find('TMP') == 0:
-                            logger.error("--- --- --- vm %s DONOT restore snapshot " % vboxmgr.getVMName())
-                            pass
+                if self.runtime_option['run_with_snapshot'] == 1:
+                    if self.insid.find('TMP') == 0:
+                        # create snapshot if not exist
+                        # do nothing if exist
+                        if not vboxmgr.isSnapshotExist(snapshot_name):
+                            ret = vboxmgr.take_snapshot(snapshot_name)
+
+                    if self.insid.find('TVD') == 0:
+                        # create snapshot if not exist
+                        # restore snapshot if exist
+                        if not vboxmgr.isSnapshotExist(snapshot_name):
+                            ret = vboxmgr.take_snapshot(snapshot_name)
                         else:
-                            logger.error("--- --- --- vm %s is restore snapshot" % vboxmgr.getVMName())
                             ret = vboxmgr.restore_snapshot(snapshot_name)
-                    else:
-                        ret = vboxmgr.take_snapshot(snapshot_name)
+
+                    if self.insid.find('VD') == 0:
+                        # create snapshot if not exist
+                        # restore snapshot if exist
+                        if not vboxmgr.isSnapshotExist(snapshot_name):
+                            ret = vboxmgr.take_snapshot(snapshot_name)
+                        else:
+                            ret = vboxmgr.restore_snapshot(snapshot_name)
+
+                    if self.insid.find("PVD") == 0:
+                        # create snapshot if not exist
+                        # do nothing if exist
+                        if not vboxmgr.isSnapshotExist(snapshot_name):
+                            ret = vboxmgr.take_snapshot(snapshot_name)
+
+                    if self.insid.find('VS') == 0:
+                        # create snapshot if not exist
+                        # restore snapshot if exist
+                        if not vboxmgr.isSnapshotExist(snapshot_name):
+                            ret = vboxmgr.take_snapshot(snapshot_name)
+                        else:
+                            ret = vboxmgr.restore_snapshot(snapshot_name)
 
                 logger.error("--- --- --- check whether it is LNC")
                 if isLNC():

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-06-18 03:30+0000\n"
+"POT-Creation-Date: 2017-05-29 14:09+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -45,52 +45,65 @@ msgstr "请输入登录账号！"
 msgid "Please input user password !"
 msgstr "请输入登录密码！"
 
-#: templates/portal/cloud-desktop.html:13
+#: templates/portal/cloud-desktop.html:7
+#, fuzzy
+msgid " Edit Password"
+msgstr "登录密码"
+
+#: templates/portal/cloud-desktop.html:11
+msgid " Logout"
+msgstr ""
+
+#: templates/portal/cloud-desktop.html:23
 msgid "'s Cloud Desktop"
 msgstr "的云桌面"
 
-#: templates/portal/cloud-desktop.html:38
-#: templates/portal/cloud-desktop.html:80
+#: templates/portal/cloud-desktop.html:48
+#: templates/portal/cloud-desktop.html:91
 msgid "Run"
 msgstr "运行"
 
-#: templates/portal/cloud-desktop.html:39
+#: templates/portal/cloud-desktop.html:49
 msgid "Show"
 msgstr "显示"
 
-#: templates/portal/cloud-desktop.html:43
+#: templates/portal/cloud-desktop.html:53
 msgid "Stop"
 msgstr "停止"
 
-#: templates/portal/cloud-desktop.html:57
+#: templates/portal/cloud-desktop.html:54
+msgid "Restore"
+msgstr "复原"
+
+#: templates/portal/cloud-desktop.html:68
 msgid "'s Virtualized Application"
 msgstr "的虚拟应用"
 
-#: templates/portal/cloud-desktop.html:93
+#: templates/portal/cloud-desktop.html:104
 msgid "Upload Private Data"
 msgstr "上传私人数据"
 
-#: templates/portal/cloud-desktop.html:104
+#: templates/portal/cloud-desktop.html:115
 msgid "Step 1: create and select directory"
 msgstr "步骤1：创建并选择目录"
 
-#: templates/portal/cloud-desktop.html:107
+#: templates/portal/cloud-desktop.html:118
 msgid "Private Data Directory in Server"
 msgstr "云平台上的私人数据空间"
 
-#: templates/portal/cloud-desktop.html:125
+#: templates/portal/cloud-desktop.html:136
 msgid "Step 2: select files to upload"
 msgstr "步骤2：选择一个文件上传"
 
-#: templates/portal/cloud-desktop.html:126
+#: templates/portal/cloud-desktop.html:137
 msgid "Your browser doesn't support HTML5."
 msgstr "你的浏览器不支持HTML5标准"
 
-#: templates/portal/cloud-desktop.html:599
+#: templates/portal/cloud-desktop.html:672
 msgid "booting ... ..."
 msgstr "启动中 ... ..."
 
-#: templates/portal/cloud-desktop.html:671
+#: templates/portal/cloud-desktop.html:776
 msgid "Windows Ssytem is not supported yet."
 msgstr "暂不支持Windows系统。"
 
@@ -220,10 +233,6 @@ msgstr "联系信息"
 msgid "Address"
 msgstr "地址"
 
-#: templates/portal/portal_template.html:70
-msgid "Floor 7, XiXi Habour, Hanghzou, zhejiang"
-msgstr "浙江省杭州市文三路1号西溪数码港7楼"
-
 #: templates/portal/portal_template.html:71
 msgid "Phone"
 msgstr "电话"
@@ -231,10 +240,6 @@ msgstr "电话"
 #: templates/portal/portal_template.html:72
 msgid "Person"
 msgstr "联系人"
-
-#: templates/portal/portal_template.html:72
-msgid "Mr.zhou"
-msgstr "周经理"
 
 #: templates/portal/portal_template.html:73
 msgid "Email"
@@ -272,35 +277,35 @@ msgstr "用户操作视频"
 msgid "access cloud application"
 msgstr "访问云应用"
 
-#: templates/portal/videos.html:45
+#: templates/portal/videos.html:44
 msgid "apply new account"
 msgstr "申请新账号"
 
-#: templates/portal/videos.html:51
+#: templates/portal/videos.html:49
 msgid "use web-based virtual desktop"
 msgstr "WEB页面访问云桌面"
 
-#: templates/portal/videos.html:56
+#: templates/portal/videos.html:53
 msgid "use windows-based virtual desktop"
 msgstr "Windows工具访问云桌面"
 
-#: templates/portal/videos.html:61
+#: templates/portal/videos.html:57
 msgid "use thin-client-based virtual desktop"
 msgstr "瘦客户机访问云桌面"
 
-#: templates/portal/videos.html:76
+#: templates/portal/videos.html:79
 msgid "Administrator Demo Video"
 msgstr "管理员操作视频"
 
-#: templates/portal/videos.html:78
+#: templates/portal/videos.html:81
 msgid "Install Ubuntu 14.04 64bit Server"
 msgstr "安装64位Ubuntu 14.04服务器"
 
-#: templates/portal/videos.html:83
+#: templates/portal/videos.html:85
 msgid "Install eduCloud into One Machine"
 msgstr "安装单机版私有云平台"
 
-#: templates/portal/videos.html:89
+#: templates/portal/videos.html:90
 msgid "Initialization 1: Import image template"
 msgstr "初始化一：导入镜像文件模板"
 
@@ -308,33 +313,39 @@ msgstr "初始化一：导入镜像文件模板"
 msgid "Initialization 2: Create new template"
 msgstr "初始化二：创建新的镜像文件模板"
 
-#: templates/portal/videos.html:99
+#: templates/portal/videos.html:98
 msgid "Initialization 3: Modify existing template"
 msgstr "初始化三：修改现有镜像文件模板"
 
-#: templates/portal/videos.html:104
+#: templates/portal/videos.html:103
 msgid "Initialization 4: Add new User Accounts"
 msgstr "初始化四：添加新的用户账号"
 
-#: templates/portal/videos.html:110
+#: templates/portal/videos.html:108
 msgid "create desktop virtual machine"
 msgstr "创建云桌面虚拟机"
 
-#: templates/portal/videos.html:115
+#: templates/portal/videos.html:112
 msgid "create server virtual machine"
 msgstr "创建云服务虚拟机"
 
-#: templates/portal/videos.html:132
+#: templates/portal/videos.html:124
 msgid "system run-time parameters"
 msgstr "系统运行参数介绍"
 
-#: templates/portal/videos.html:137
+#: templates/portal/videos.html:128
 msgid "physic machine management"
 msgstr "物理服务器管理"
 
-#: templates/portal/videos.html:142
+#: templates/portal/videos.html:132
 msgid "virtual machine management"
 msgstr "虚拟机管理"
+
+#~ msgid "Floor 7, XiXi Habour, Hanghzou, zhejiang"
+#~ msgstr "浙江省杭州市文三路1号西溪数码港7楼"
+
+#~ msgid "Mr.zhou"
+#~ msgstr "周经理"
 
 #~ msgid "Show by Browser"
 #~ msgstr "在浏览器中显示"
