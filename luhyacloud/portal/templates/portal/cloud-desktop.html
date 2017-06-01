@@ -711,6 +711,8 @@ function init_GUI() {
         	insid = data['tid'].split(":")[2]
         	if (insid.indexOf("PVD") == 0) {
         		$('#restore_{{ vd.id }}').show();
+        	} else  {
+        		$('#restore_{{ vd.id }}').hide();
         	}
         	if ((insid.indexOf("VD") == 0 || insid.indexOf("PVD") == 0) && data['phase'] == "" && data['state'] == "" ) {
 				$('#run_{{ vd.id }}').removeClass('disabled');

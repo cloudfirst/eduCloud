@@ -189,6 +189,7 @@ class prepareImageTaskThread(multiprocessing.Process):
             elif worker.isDone():
                 logger.error(' ----- Done . ')
                 payload['progress'] = 0
+
                 self.forwardTaskStatus2CC(json.dumps(payload))
                 break
             else:
@@ -199,9 +200,9 @@ class prepareImageTaskThread(multiprocessing.Process):
 
         if worker.isFailed() or worker.isDone():
             if paras == 'luhya':
-                del self.img_tasks_status[imgid]
+                del img_tasks_status[imgid]
             if paras == 'db':
-                del self.db_tasks_status[imgid]
+                del db_tasks_status[imgid]
 
         return retvalue
 

@@ -25,7 +25,6 @@ def chownDir():
     cmd_line = 'sudo chown -R luhya:luhya /var/log/educloud'
     commands.getoutput(cmd_line)
 
-
 def checkPackage( pname ):
     cmd_line = 'dpkg -l | grep %s' % pname
     output = commands.getoutput(cmd_line)
@@ -35,9 +34,13 @@ def checkPackage( pname ):
        return False
 
 def usage():
-    print "Usage : allinone-install [-h hostip -v [vbox|ndp|kvm]]"
+    print "Usage : allinone-install [-h hostip ] [-v vbox|ndp|kvm] [-m w|a]"
 
 def main(argv):
+    if len(argv) < 2:
+        usage()
+        exit(0)
+
     prepare()
 
     DST_IP = '121.41.80.147'
@@ -355,6 +358,9 @@ def main(argv):
 
     chownDir()
     restore_apt()
+
+    cmd_line = 'wget http://%s/scripts/educloud-check.py' % DST_IP
+    os.system(cmd_line)
 
     print '----------------------------------------------------------'
     print  'Now system will reboot to enable all services ... ... ...'

@@ -7,9 +7,8 @@ from IPy import IP
 
 from luhyaapi.educloudLog import *
 from luhyaapi.settings import *
-logger = getclclogger()
 
-
+logger = getluhyaapilogger()
 
 # PUBLIC or PRIVATE
 def getIPType(ipaddr):
@@ -267,7 +266,7 @@ def getSysMemUtil():
 import socket, commands
 
 def DoesServiceExist(host, port, protocol='tcp'):
-    # logger.error("DoesServiceExist at port=%s --- --- ", port)
+    logger.error("DoesServiceExist at port=%s --- --- ", port)
     try:
         if protocol == 'tcp':
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

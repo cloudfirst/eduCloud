@@ -8,7 +8,7 @@ from luhyaapi.zmqWrapper import *
 from luhyaapi.educloudLog import *
 from luhyaapi.settings import *
 
-logger = geteducloudlogger()
+logger = getluhyaapilogger()
 
 GUEST_USERNAME = "Administrator"
 GUEST_PASSWORD = "luhya"

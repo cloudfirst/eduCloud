@@ -199,6 +199,7 @@ install:
 
 	cd $(CURDIR)/nodeDaemon/nc && sudo -u luhya pyinstaller nc_cmd_consumer.py -F -s
 	cd $(CURDIR)/nodeDaemon/nc && sudo -u luhya pyinstaller nc_status_publisher.py -F -s
+	cd $(CURDIR)/nodeDaemon/nc && sudo -u luhya pyinstaller nc_sshfs.py -F -s
 	cp $(CURDIR)/nodeDaemon/nc/dist/nc_*            $(DAEMON_NC)/usr/local/nodedaemon/nc/
 
 	install -d $(DAEMON_NC)/etc/supervisor/conf.d

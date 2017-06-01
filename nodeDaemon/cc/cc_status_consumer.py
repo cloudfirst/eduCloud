@@ -26,26 +26,6 @@ class cc_statusConsumer():
                               no_ack=True)
         channel.start_consuming()
 
-def perform_mount():
-    logger.error("Enter perform_mount() ... ...")
-    # mount clc's /storage/space/{software, pub-data} to local
-    if amIwalrus():
-        logger.error("I am cc and walrus, no mount any more.")
-        return
-
-    clcip = getclcipbyconf()
-    cmd_line = 'id -u luhya'
-    luhya_id = commands.getoutput(cmd_line)
-    base_cmd = 'echo luhya | sshfs -o uid=%s,gid=%s,cache=yes,allow_other,password_stdin,reconnect luhya@%s:/storage/space /storage/space'
-
-    if not os.path.ismount('/storage/space'):
-        cmd1 = base_cmd % (luhya_id, luhya_id, clcip)
-        logger.error(cmd1)
-        os.system(cmd1)
-    else:
-        logger.error("/storage/space is already mounted ... ...")
-
-
 def registerMyselfasCC():
     logger.error("Enter registerMyselfasCC() ... ...")
 
@@ -83,8 +63,6 @@ def registerMyselfasCC():
 def main():
     # read /storage/config/cc.conf to register itself to cc
     registerMyselfasCC()
-    perform_mount()
-
     consumer = cc_statusConsumer()
     consumer.run()
 

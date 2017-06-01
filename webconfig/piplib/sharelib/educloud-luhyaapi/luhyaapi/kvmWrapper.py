@@ -6,7 +6,7 @@ from luhyaapi.educloudLog import *
 from luhyaapi.hostTools import *
 import json
 
-logger = getncdaemonlogger()
+logger = getluhyaapilogger()
 
 def get_vm_ifs():
     cmd = 'vboxmanage list bridgedifs | grep Name:'

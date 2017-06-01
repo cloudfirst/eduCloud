@@ -23,36 +23,44 @@ def init_log(logfile, loggername='luhya'):
     logger.setLevel(logging.ERROR)
     return logger
 
+WEB_LOG_FILE        = '/var/log/educloud/educloud.log'
+NODE_CLC_LOG_FILE   = '/var/log/educloud/nodedaemon-clc.log'
+NODE_CC_LOG_FILE    = '/var/log/educloud/nodedaemon-cc.log'
+NODE_NC_LOG_FILE    = '/var/log/educloud/nodedaemon-nc.log'
+API_LOG_FILE        = '/var/log/educloud/luhyaapi.log'
+SSHFS_LOG_FILE     = '/var/log/educloud/sshfs.log'
 
-DEBUG_LOG_FILE = '/var/log/educloud/luhya-debug.log'
-luhya_debug_logger = init_log(DEBUG_LOG_FILE)
-
-NC_DEBUG_LOG_FILE = '/var/log/educloud/nc.log'
-nc_debug_logger = init_log(NC_DEBUG_LOG_FILE, 'node')
+def getsshfslogger():
+    status_logger = init_log(SSHFS_LOG_FILE)
+    return status_logger
 
 def getclcdaemonlogger():
+    luhya_debug_logger = init_log(WEB_LOG_FILE)
     return luhya_debug_logger
 
 def getwalrusdaemonlogger():
+    luhya_debug_logger = init_log(WEB_LOG_FILE)
     return luhya_debug_logger
 
 def getccdaemonlogger():
+    luhya_debug_logger = init_log(WEB_LOG_FILE)
     return luhya_debug_logger
 
 def getncdaemonlogger():
+    nc_debug_logger = init_log(NODE_NC_LOG_FILE, 'node')
     return nc_debug_logger
 
 def getclclogger():
+    luhya_debug_logger = init_log(WEB_LOG_FILE)
     return luhya_debug_logger
 
 def getwalruslogger():
+    luhya_debug_logger = init_log(WEB_LOG_FILE)
     return luhya_debug_logger
 
 def getcclogger():
+    luhya_debug_logger = init_log(WEB_LOG_FILE)
     return luhya_debug_logger
 
-def getnclogger():
-    return luhya_debug_logger
-
-def geteducloudlogger():
-    return luhya_debug_logger
+def getluhyaapilogger():
+    return init_log(WEB_LOG_FILE)

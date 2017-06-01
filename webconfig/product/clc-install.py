@@ -1,6 +1,33 @@
 import os, commands, sys, getopt
 import time
 
+
+def restore_apt():
+    if os.path.exists('/etc/apt/sources.list.luhya'):
+        cmd_line = 'sudo cp /etc/apt/sources.list.luhya /etc/apt/sources.list'
+        commands.getoutput(cmd_line)
+
+        cmd_line = 'sudo rm /etc/apt/sources.list.luhya'
+        commands.getoutput(cmd_line)
+
+def prepare():
+    cmd_line = "sudo apt-get install wget curl"
+    os.system(cmd_line)
+
+
+def chownDir():
+    cmd_line = 'sudo chown -R luhya:luhya /storage && sudo chmod -R 777 /storage'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /usr/local/www && sudo chmod -R 777 /usr/local/www'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /usr/local/nodedaemon && sudo chmod -R 777 /usr/local/nodedaemon'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /usr/local/webconfig && sudo chmod -R 777 /usr/local/webconfig'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /var/log/educloud'
+    commands.getoutput(cmd_line)
+
+
 def checkPackage( pname ):
     cmd_line = 'dpkg -l | grep %s' % pname
     output = commands.getoutput(cmd_line)
@@ -10,9 +37,15 @@ def checkPackage( pname ):
        return False
 
 def usage():
-    print "Usage : clc-install [-h hostip]"
+    print "Usage : clc-install [-h hostip] [-m w|a]"
 
 def main(argv):
+    if len(argv) < 2:
+        usage()
+        exit(0)
+
+    prepare()
+
     DST_IP = '121.41.80.147'
     MODE = "w"
 
@@ -63,7 +96,6 @@ def main(argv):
     cmd_line = 'sudo apt-get update'
     os.system(cmd_line)
 
-
     ##############################################################################
     # 4. install mysql-server without password prompt
     ##############################################################################
@@ -91,9 +123,6 @@ def main(argv):
     if ret == '':
         cmd_line = 'sudo useradd  -m -s /bin/bash -U luhya'
         commands.getoutput(cmd_line)
-
-        # cmd_line = 'sudo passwd luhya'
-        # os.system(cmd_line)
 
     ##############################################################################
     # 6. create /storage directories and download data.vdi
@@ -138,28 +167,17 @@ def main(argv):
     ##############################################################################
     # 7. install educloud-clc in one machine by apt-get
     ##############################################################################
-    cmd_line = 'sudo apt-get -y install educloud-portal educloud-virtapp nodedaemon-clc nodedaemon-walrus virtualbox-4.3'
+    cmd_line = 'sudo apt-get -y install educloud-portal nodedaemon-clc nodedaemon-walrus educloud-virtapp educloud-bizrule virtualbox-4.3'
     os.system(cmd_line)
 
-    # install vbox ext pack
-    if not os.path.exists("./Oracle_VM_VirtualBox_Extension_Pack-4.3.26-98988.vbox-extpack"):
-        cmd_line = 'wget http://%s/Oracle_VM_VirtualBox_Extension_Pack-4.3.26-98988.vbox-extpack' % DST_IP
-        os.system(cmd_line)
-        cmd_line = 'sudo vboxmanage extpack install Oracle_VM_VirtualBox_Extension_Pack-4.3.26-98988.vbox-extpack'
-        os.system(cmd_line)
-        cmd_line = 'rm Oracle_VM_VirtualBox_Extension_Pack-4.3.26-98988.vbox-extpack'
-        os.system(cmd_line)
-
-    cmd_line = 'sudo chown -R luhya:luhya /storage && sudo chmod -R 777 /storage'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/www && sudo chmod -R 777 /usr/local/www'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/nodedaemon && sudo chmod -R 777 /usr/local/nodedaemon'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /var/log/educloud'
-    commands.getoutput(cmd_line)
+    chownDir()
 
     # verify deb package install status
+    if checkPackage('educloud-core') == False:
+       print "--------------------------------------------------"
+       print "Install educloud-core Failed, please try again."
+       print "--------------------------------------------------"
+       exit(1)
     if checkPackage('educloud-virtapp') == False:
         print "--------------------------------------------------"
         print "Install educloud-virtapp Failed, please try again."
@@ -272,14 +290,11 @@ def main(argv):
     cmd_line = 'sudo rm /var/cache/apt/archives/partial/*.deb'
     commands.getoutput(cmd_line)
 
-    cmd_line = 'sudo chown -R luhya:luhya /storage && sudo chmod -R 777 /storage'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/www && sudo chmod -R 777 /usr/local/www'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/nodedaemon && sudo chmod -R 777 /usr/local/nodedaemon'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /var/log/educloud'
-    commands.getoutput(cmd_line)
+    chownDir()
+    restore_apt()
+
+    cmd_line = 'wget http://%s/scripts/educloud-check.py' % DST_IP
+    os.system(cmd_line)
 
     print '----------------------------------------------------------'
     print  'Now system will reboot to enable all services ... ... ...'
@@ -394,7 +409,7 @@ if ret == '':
     commands.getoutput(cmd_line)
     cmd_line = 'sudo usermod --password $(echo luhya | openssl passwd -1 -stdin) luhya'
     commands.getoutput(cmd_line)
-    cmd_line = 'sudo -u luhya ssh-keygen'
+    cmd_line = 'sudo -u luhya ssh-keygen -b 1024'
     os.system(cmd_line)
 
 ##############################################################################

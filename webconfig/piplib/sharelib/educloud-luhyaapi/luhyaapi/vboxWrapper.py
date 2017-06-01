@@ -7,7 +7,7 @@ from luhyaapi.hostTools import *
 import json
 import subprocess
 
-logger = getncdaemonlogger()
+logger = getluhyaapilogger()
 
 VBOX_MGR_CMD = "VBoxManage "
 
