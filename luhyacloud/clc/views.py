@@ -498,6 +498,7 @@ def applyScheduleRule(userobj, vmobj):
             logger.error("after vmschedule bizrule, %s - %s:%s:%s not trigger the rule." % (userobj["user_id"], vmobj["src_imageid"], vmobj["dst_imageid"], vmobj["insid"] ))
     elif result["Result"] == "FAIL":
         logger.error("after vmschedule bizrule, %s - %s:%s:%s report FAIL." % (userobj["user_id"], vmobj["src_imageid"], vmobj["dst_imageid"], vmobj["insid"]))
+        logger.error("--- --- with reason = %s" % result["reason"])
 
     return scheduled, vmobj["cc"], vmobj["nc"]
 
@@ -672,7 +673,11 @@ def findBuildResource(request, tid):
     if os.path.exists("/etc/educloud/modules/bizrule") == True:
         _user = buildUserObjectForScheduleRuleEngine(request.user)
         _vm   = buildVMObjectForScheduleRuleEngine(tid)
-        scheduled, cc_def, nc_def = applyScheduleRule(_user, _vm)
+        scheduled, _cc_def, _nc_def = applyScheduleRule(_user, _vm)
+
+    if scheduled:
+        cc_def = _cc_def
+        nc_def = _nc_def
 
     # get a list of cc
     if cc_def == 'any':
@@ -4392,11 +4397,11 @@ def delet_task_by_id(tid):
     except Exception as e:
         response = {}
         response['Result'] = 'OK'
-
+        logger.error("--- --- --- delet_task_by_id with exception = %s" % str(e) )
+        releaseRuntimeOptionForImageBuild(tid)
+        trec.delete()
         retvalue = json.dumps(response)
         return HttpResponse(retvalue, content_type="application/json")
-
-
 
 def delete_tasks(request):
     tid = request.POST['tid']

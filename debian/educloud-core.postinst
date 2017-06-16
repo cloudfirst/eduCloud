@@ -16,5 +16,5 @@ if [ "$1" = "configure" ]; then
    ##############################
    cp /usr/local/webconfig/rsync/rsync          /etc/default
    cp /usr/local/webconfig/rsync/rsyncd.conf    /etc/
-   /etc/init.d/rsync start
+   /etc/init.d/rsync start || true
 fi

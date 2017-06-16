@@ -1,3 +1,5 @@
+SET NAMES utf8;
+
 alter table auth_user convert to character set utf8;
 
 alter table clc_ecaccount convert to character set utf8;
