@@ -2082,7 +2082,7 @@ def genVMDisks(tid, usage, uid):
         trec = ectaskTransaction.objects.get(tid=tid)
 
         c['file'] = '/storage/images/%s/machine' % dst_imgid
-        c['mtype']   = 'normal'
+        c['mtype']   = 'multiattach'
         disks.append(c)
 
         if isImageWithDDisk(src_imgid):
