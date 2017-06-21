@@ -15,7 +15,7 @@ def perform_mount():
         return
 
     clcip = getclcipbyconf()
-    base_cmd = 'sshfs -o cache=yes,reconnect %s:/storage/space /storage/space'
+    base_cmd = 'sshpass -p luhya sshfs -o cache=yes,reconnect %s:/storage/space /storage/space'
 
     if not os.path.ismount('/storage/space'):
         os.system("fusermount -u /storage/space")

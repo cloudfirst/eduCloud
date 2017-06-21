@@ -24,12 +24,16 @@ def perform_mount():
         return
 
     ccip = getccipbyconf()
-    base_cmd = 'sshfs -o cache=yes,reconnect %s:/storage/space /storage/space'
+    base_cmd = 'sshpass -p luhya sshfs -o cache=yes,reconnect %s:/storage/space /storage/space'
 
     if not os.path.ismount('/storage/space'):
+        logger.error("/storage/space is NOT mounted.")
         os.system("fusermount -u /storage/space")
         cmd = base_cmd % (ccip)
+        logger.error("run cmd=%s" % cmd)
         os.system(cmd)
+    else:
+        logger.error("/storage/space is mounted.")
 
 class nc_sshfs():
     def __init__(self, ):
@@ -42,7 +46,7 @@ class nc_sshfs():
                 perform_mount()
                 time.sleep(5*60)
             except Exception as e:
-                logger.error('nc_statusPublisherThread exception = %s' % str(e))
+                logger.error('nc_ssfs sexception = %s' % str(e))
 
 def main():
     sshfser = nc_sshfs()
