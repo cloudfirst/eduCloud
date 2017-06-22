@@ -1,8 +1,34 @@
-import time, os
+import time, os, pexpect
 from luhyaapi.settings import *
 from luhyaapi.educloudLog import *
 
 logger = getsshfslogger()
+
+def runsshfswithexpect():
+    ccip = getccipbyconf()
+    password = "luhya"
+    base_cmd = 'sshfs -o cache=yes,reconnect luhya@%s:/storage/space /storage/space'
+
+    if not os.path.ismount('/storage/space'):
+        logger.error("/storage/space is NOT mounted.")
+        os.system("fusermount -u /storage/space")
+        cmd = base_cmd % (ccip)
+        logger.error("run cmd=%s" % cmd)
+        child = pexpect.spawn(cmd)
+        i = child.expect(['password:', r"yes/no",pexpect.EOF])
+        if i == 0:
+            child.sendline(password)
+        elif i == 1:
+            child.sendline("yes")
+            ret1 = child.expect(["password:",pexpect.EOF])
+            if ret1 == 0:
+                child.sendline(password)
+        data = child.read()
+        logger.error("result is %s" % data)
+        child.close()
+    else:
+        logger.error("/storage/space is mounted.")
+ 
 
 def amIcc():
     if os.path.exists('/etc/educloud/modules/cc'):
@@ -23,17 +49,7 @@ def perform_mount():
         logger.error("I am nc and cc, no mount any more.")
         return
 
-    ccip = getccipbyconf()
-    base_cmd = 'sshpass -p luhya sshfs -o cache=yes,reconnect %s:/storage/space /storage/space'
-
-    if not os.path.ismount('/storage/space'):
-        logger.error("/storage/space is NOT mounted.")
-        os.system("fusermount -u /storage/space")
-        cmd = base_cmd % (ccip)
-        logger.error("run cmd=%s" % cmd)
-        os.system(cmd)
-    else:
-        logger.error("/storage/space is mounted.")
+    runsshfswithexpect()
 
 class nc_sshfs():
     def __init__(self, ):

@@ -1,3 +1,10 @@
+educloud (4.0.7) lucid; urgency=low
+  [ Thomas Li ]
+  * support install CD-ROM.
+  * fix bug of multiple image download processes.
+
+ -- Signing Key (Thomas Li) <package@educloud.com>  Thu, 22 June 2017 16:45:53 -0400
+
 educloud (4.0.6) lucid; urgency=low
   [ Thomas Li ]
   * a stable version of educloud with ansible support.

@@ -2071,13 +2071,13 @@ def genVMDisks(tid, usage, uid):
             disks.append(d)
         else:
             if isImageWithDDisk(src_imgid):
-                d['file'] = '/storage/tmp/images/%s/data' % (dst_imgid)
+                if src_imgid == dst_imgid:
+                    d['file'] = '/storage/images/%s/data' % (dst_imgid)
+                else:
+                    d['file'] = '/storage/tmp/images/%s/data' % (dst_imgid)
                 d['mtype'] = 'normal'
                 disks.append(d)
 
-        #e['file']    = '/storage/images/data'
-        #e['mtype']   = 'multiattach'
-        #disks.append(e)
     if ins_id.find('PVD') == 0:
         trec = ectaskTransaction.objects.get(tid=tid)
 
@@ -2905,7 +2905,7 @@ def image_create_task_getsubmitprogress(request, srcid, dstid, insid):
         }
         response = json.dumps(payload)
 
-    # logger.error("lkf: get progress = %s", response)
+    logger.error("get submit progress = %s", response)
     return HttpResponse(response, content_type="application/json")
 
 def image_modify_task_start(request, srcid):
