@@ -76,11 +76,12 @@ def postlogin_run(user):
 
 def verify_params_in_set_image(params):
     image_name = params["image"]
-    recs = ecImages.objects.filter(name=image_name)
-    if recs.count() > 0:
-        return True, ""
-    else:
+    recs_1 = ecImages.objects.filter(name=image_name)
+    recs_2 = ecVDS.objects.filter(name=image_name) 
+    if recs_1.count() == 0 and recs_2.count() == 0:
         return False, image_name + _(" is not an valid image name")
+    else:
+        return True, ""
 
 def postlogin_verify_action_params(actions):
     msg = ""
