@@ -207,6 +207,7 @@ urlpatterns = patterns('',
     url(r'^api/1.0/servers/delete$',        views.delete_servers,               name='delete_servers_view'),
     url(r'^api/1.0/servers/update$',        views.update_servers,               name='update_servers_view'),
     url(r'^api/1.0/servers/create$',        views.create_servers,               name='create_servers_view'),
+    url(r'^api/1.0/servers/list/all$',                  views.list_servers_all,         name='list_servers_view_all'),
 
     url(r'^api/1.0/ccresource/list$',                   views.list_cc_resource,                 name='list_cc_resource_view'),
     url(r'^api/1.0/ccresource/list/(?P<recid>\w+)$',    views.list_cc_resource_by_id,           name='list_cc_resource_by_id_view'),

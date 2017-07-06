@@ -4162,14 +4162,61 @@ def list_nc_servers(request):
 
 # core table functions for ecServers
 def list_servers_by_role(request, roletype):
+    response = {}
     if roletype == 'cc':
         return list_cc_servers(request)
 
     if roletype == 'nc':
         return list_nc_servers(request)
 
-    response['Records'] = data
     response['Result'] = 'OK'
+
+    retvalue = json.dumps(response)
+    return HttpResponse(retvalue, content_type="application/json")
+
+def list_servers_all(request):
+    response = {}
+
+    if amIclc() and amIcc() and amInc():
+        response['arch'] = 'allinone'
+        clcobj = ecServers.objects.filter(role='clc')
+        response['mlist']   = clcobj.ip0
+
+    if amIclc() and amIcc() and not amInc():
+        response['arch'] = 'singlecluster'
+
+        clcobj = ecServers.objects.filter(role='clc')
+        mlist = {}
+        mlist['clc'] = clcobj.ip0
+        mlist['ncs'] = []
+
+        ncobjs = ecServers.objects.filter(role='nc')
+        for ncobj in ncobjs:
+            mlist['ncs'].append(ncobj.ip0)
+        response['mlsit'] = mlist
+
+    if amIclc() and not amIcc() and not amInc():
+        response['arch'] = 'dist'
+
+        clcobj = ecServers.objects.filter(role='clc')
+        mlist = {}
+        mlist['clc'] = clcobj.ip0
+        mlist['ccs'] = []
+
+        ccobjs = ecServers.objects.filter(role='cc')
+        for ccobj in ccobjs:
+            ccjson = {}
+            ccjson['ccip'] = ccobj.ip0
+            ccjson['ccname'] = ccobj.ccname
+
+            ncobjs = ecServers.objects.filter(role='cc', ccname=ccobj.ccname)
+            ncjson = [];
+            for ncobj in ncobjs:
+                ncjson.append(ncobj.ip0)
+            ccjson['ncs'] = ncjson
+
+            mlist['ccs'].append(ccjson)
+        response['mlsit'] = mlist
 
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")

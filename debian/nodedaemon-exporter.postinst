@@ -1,0 +1,12 @@
+#!/bin/bash -e
+
+if [ "$1" = "configure" ]; then
+    chown -R luhya:luhya /usr/local/nodedaemon || true
+    chmod -R 777 /usr/local/nodedaemon || true
+
+    ln -s /usr/local/nodedaemon/exporter/node_exporter-0.14.0.linux-amd64/node_exporter /usr/bin/node_exporter     || true
+
+    systemctl enable supervisor || true
+    systemctl start supervisor  || true
+
+fi

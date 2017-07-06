@@ -19,6 +19,7 @@ DAEMON_WALRUS   =debian/nodedaemon-walrus
 DAEMON_CC       =debian/nodedaemon-cc
 DAEMON_NC       =debian/nodedaemon-nc
 DAEMON_TNC		=debian/nodedaemon-tnc
+DAEMON_EXPORTER =debian/nodedaemon-exporter
 
 build:
 	echo "now is building educloud debian packages ... ... "
@@ -211,3 +212,13 @@ install:
 	install -d $(DAEMON_NC)/usr/local/bin
 	cd $(CURDIR)/webconfig/serverTools/ && sudo -u luhya pyinstaller recoverVMfromCrash.py -F -s
 	cp $(CURDIR)/webconfig/serverTools/dist/recoverVMfromCrash             $(DAEMON_NC)/usr/local/bin/
+
+	##########################
+	#     DAEMON_EXPORTER    #
+	##########################
+	install -d $(DAEMON_EXPORTER)/usr/local/nodedaemon/exporter
+
+	tar vxf $(CURDIR)/webconfig/prometheus/exporter/node_exporter-0.14.0.linux-amd64.tar.gz -C  $(DAEMON_EXPORTER)/usr/local/nodedaemon/exporter
+
+	install -d $(DAEMON_EXPORTER)/etc/supervisor/conf.d
+	cp $(CURDIR)/webconfig/prometheus/exporter/supervisor/nodedaemon-exporter.conf   $(DAEMON_EXPORTER)/etc/supervisor/conf.d/
