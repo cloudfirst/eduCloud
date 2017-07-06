@@ -4179,13 +4179,13 @@ def list_servers_all(request):
 
     if amIclc() and amIcc() and amInc():
         response['arch'] = 'allinone'
-        clcobj = ecServers.objects.filter(role='clc')
+        clcobj = ecServers.objects.get(role='clc')
         response['mlist']   = clcobj.ip0
 
     if amIclc() and amIcc() and not amInc():
         response['arch'] = 'singlecluster'
 
-        clcobj = ecServers.objects.filter(role='clc')
+        clcobj = ecServers.objects.get(role='clc')
         mlist = {}
         mlist['clc'] = clcobj.ip0
         mlist['ncs'] = []
@@ -4198,7 +4198,7 @@ def list_servers_all(request):
     if amIclc() and not amIcc() and not amInc():
         response['arch'] = 'dist'
 
-        clcobj = ecServers.objects.filter(role='clc')
+        clcobj = ecServers.objects.get(role='clc')
         mlist = {}
         mlist['clc'] = clcobj.ip0
         mlist['ccs'] = []
