@@ -18,13 +18,16 @@ DAEMON_CLC      =debian/nodedaemon-clc
 DAEMON_WALRUS   =debian/nodedaemon-walrus
 DAEMON_CC       =debian/nodedaemon-cc
 DAEMON_NC       =debian/nodedaemon-nc
-DAEMON_TNC		=debian/nodedaemon-tnc
+DAEMON_TNC	=debian/nodedaemon-tnc
 DAEMON_EXPORTER =debian/nodedaemon-exporter
 
 build:
 	echo "now is building educloud debian packages ... ... "
 clean:
 	echo "now is cleaning educloud debian packages ... ... "
+	rm -fr $(EDU_CORE) $(EDU_WEBBASE) $(WEB_PORTAL) $(WEB_CLC) $(WEB_WALRUS) $(WEB_CC) $(WEB_VIRTAPP) $(WEB_BIZRULE)
+	rm -fr $(DAEMON_CLC) $(DAEMON_WALRUS) $(DAEMON_CC) $(DAEMON_NC) $(DAEMON_EXPORTER)
+	rm debian/*.debhelper.log debian/*.substvars  debian/files debian/stamp* debian/compat
 install:
 	####################
 	#     LUHYA API    #
