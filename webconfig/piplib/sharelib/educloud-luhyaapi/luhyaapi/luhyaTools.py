@@ -8,7 +8,7 @@ from luhyaapi.zmqWrapper import *
 from luhyaapi.educloudLog import *
 from luhyaapi.settings import *
 
-logger = geteducloudlogger()
+logger = getluhyaapilogger()
 
 GUEST_USERNAME = "Administrator"
 GUEST_PASSWORD = "luhya"
@@ -36,6 +36,9 @@ def makeDataDiskReady(tid, uid):
         else:
             flag = "prepare"
             per = (cloned_size * 100 / origin_size)
+            if per >= 99:
+                flag = "ready"
+                per = 100
 
     else:
         flag = "none"
@@ -75,6 +78,9 @@ def makeSystemDiskReady(tid, uid):
         else:
             flag = "prepare"
             per = (cloned_size * 100 / origin_size)
+            if per >= 99:
+                flag = "ready"
+                per = 100
     else:
         flag = "none"
         per = 0

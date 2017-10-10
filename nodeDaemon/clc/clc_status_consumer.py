@@ -43,9 +43,9 @@ class clc_statusConsumer():
         self.save2Mem(key, message)
 
         # test save is ok
-        if flag == 1:
-            payload = self.mc.get(key)
-            logger.error("thomas#load %s=%s" % (key, payload))
+        #if flag == 1:
+        #    payload = self.mc.get(key)
+        #    logger.error("thomas#load %s=%s" % (key, payload))
 
     def statusMessageHandle(self, ch, method, properties, body):
         self.forwardMessage2Memcache(body)

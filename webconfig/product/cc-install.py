@@ -1,6 +1,30 @@
 import os, commands, sys, getopt
 import time
 
+def restore_apt():
+    if os.path.exists('/etc/apt/sources.list.luhya'):
+        cmd_line = 'sudo cp /etc/apt/sources.list.luhya /etc/apt/sources.list'
+        commands.getoutput(cmd_line)
+
+        cmd_line = 'sudo rm /etc/apt/sources.list.luhya'
+        commands.getoutput(cmd_line)
+
+def prepare():
+    cmd_line = "sudo apt-get install wget curl"
+    os.system(cmd_line)
+
+def chownDir():
+    cmd_line = 'sudo chown -R luhya:luhya /storage && sudo chmod -R 777 /storage'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /usr/local/www && sudo chmod -R 777 /usr/local/www'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /usr/local/nodedaemon && sudo chmod -R 777 /usr/local/nodedaemon'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /usr/local/webconfig && sudo chmod -R 777 /usr/local/webconfig'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /var/log/educloud'
+    commands.getoutput(cmd_line)
+
 def checkPackage( pname ):
     cmd_line = 'dpkg -l | grep %s' % pname
     output = commands.getoutput(cmd_line)
@@ -10,9 +34,13 @@ def checkPackage( pname ):
        return False
 
 def usage():
-    print "Usage : cc-install [-h hostip ]"
+    print "Usage : cc-install [-h hostip ] [-m w|a]"
 
 def main(argv):
+    if len(argv) < 2:
+        usage()
+        exit(0)
+
     DST_IP = '121.41.80.147'
     MODE = "w"
 
@@ -99,17 +127,7 @@ def main(argv):
     cmd_line = 'sudo apt-get -y install nodedaemon-cc'
     os.system(cmd_line)
 
-    cmd_line = 'sudo chown -R luhya:luhya /storage && sudo chmod -R 777 /storage'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/www && sudo chmod -R 777 /usr/local/www'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/nodedaemon && sudo chmod -R 777 /usr/local/wnodedaemonww'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /var/log/educloud'
-    commands.getoutput(cmd_line)
-
-    cmd_line = 'sudo rm /var/cache/apt/archives/*.deb'
-    os.system(cmd_line)
+    chownDir()
 
     if checkPackage('educloud-cc') == False:
         print "--------------------------------------------------"
@@ -166,7 +184,7 @@ def main(argv):
     # 11&12 configure , clc.conf and cc.conf
     #######################################
     if checkPackage('nodedaemon-clc') == False:
-        clcip  = raw_input("Enter Cloud IP    : ")
+        clcip  = raw_input("Enter Cloud IP(clc)    : ")
     else:
         clcip = "127.0.0.1"
 
@@ -188,9 +206,9 @@ def main(argv):
     if clcip == "127.0.0.1":
         pass
     else:
-        cmd_line = 'sudo -u luhya ssh-keygen'
+        cmd_line = 'sudo -u luhya ssh-keygen -b 1024'
         os.system(cmd_line)
-        cmd_line = "sudo -u luhya cat /home/luhya/.ssh/id_rsa.pub | ssh luhya@%s 'cat >> ~/.ssh/authorized_keys'" % clcip
+        cmd_line = "sudo -u luhya ssh-copy-id -i %s " % clcip
         os.system(cmd_line)
         cmd_line = "sudo -u luhya ssh %s 'exit' " % clcip
         os.system(cmd_line)
@@ -203,14 +221,11 @@ def main(argv):
     cmd_line = 'sudo rm /var/cache/apt/archives/partial/*.deb'
     commands.getoutput(cmd_line)
 
-    cmd_line = 'sudo chown -R luhya:luhya /storage && sudo chmod -R 777 /storage'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/www && sudo chmod -R 777 /usr/local/www'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/nodedaemon && sudo chmod -R 777 /usr/local/wnodedaemonww'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /var/log/educloud'
-    commands.getoutput(cmd_line)
+    chownDir()
+    restore_apt()
+
+    cmd_line = 'wget http://%s/scripts/educloud-check.py' % DST_IP
+    os.system(cmd_line)
 
     print '----------------------------------------------------------'
     print  'Now system will reboot to enable all services ... ... ...'

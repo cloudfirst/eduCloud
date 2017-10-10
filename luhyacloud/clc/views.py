@@ -411,8 +411,11 @@ def buildUserObjectForScheduleRuleEngine(user):
     user["user_id"] = user_rec.userid
     user["user_name"]  = user_rec.showname
     user["user_group"] = user_rec.ec_authpath_name
-    vdpara = json.loads(user_rec.vdpara)
-    user["user_usb"]  = vdpara["usb"]
+    if len(user_rec.vdpara) > 0:
+        vdpara = json.loads(user_rec.vdpara)
+        user["user_usb"]  = vdpara["usb"]
+    else:
+        user["user_usb"] = "0"
     #user["user_superuser"] = auth_user_rec.is_superuser
 
     return user
@@ -495,6 +498,7 @@ def applyScheduleRule(userobj, vmobj):
             logger.error("after vmschedule bizrule, %s - %s:%s:%s not trigger the rule." % (userobj["user_id"], vmobj["src_imageid"], vmobj["dst_imageid"], vmobj["insid"] ))
     elif result["Result"] == "FAIL":
         logger.error("after vmschedule bizrule, %s - %s:%s:%s report FAIL." % (userobj["user_id"], vmobj["src_imageid"], vmobj["dst_imageid"], vmobj["insid"]))
+        logger.error("--- --- with reason = %s" % result["reason"])
 
     return scheduled, vmobj["cc"], vmobj["nc"]
 
@@ -669,7 +673,11 @@ def findBuildResource(request, tid):
     if os.path.exists("/etc/educloud/modules/bizrule") == True:
         _user = buildUserObjectForScheduleRuleEngine(request.user)
         _vm   = buildVMObjectForScheduleRuleEngine(tid)
-        scheduled, cc_def, nc_def = applyScheduleRule(_user, _vm)
+        scheduled, _cc_def, _nc_def = applyScheduleRule(_user, _vm)
+
+    if scheduled:
+        cc_def = _cc_def
+        nc_def = _nc_def
 
     # get a list of cc
     if cc_def == 'any':
@@ -999,9 +1007,13 @@ def edit_profile(request, uid):
         _vdpara = json.loads(ua.vdpara)
         _user['pds'] = _vdpara['pds']
         _user['sds'] = _vdpara['sds']
+        _user['vapp']= _vdpara['vapp']
+        _user['usb'] = _vdpara['usb']
     else:
-        _user['pds'] = ''
-        _user['sds'] = ''
+        _user['pds'] = "0"
+        _user['sds'] = "no"
+        _user['vapp']= "no"
+        _user['usb'] = "0"
 
     authnamelist =  ecAuthPath.objects.all()
     roles = []
@@ -1092,9 +1104,10 @@ def account_reset_password(request):
         user.save()
 
         ua = ecAccount.objects.get(userid=request.POST['userid'])
-        _vdpara = json.loads(ua.vdpara)
-        if _vdpara['vapp'] == 'yes':
-            virtapp_setPassword2AD(uid, newpw)
+        if len(ua.vdpara) > 0:
+            _vdpara = json.loads(ua.vdpara)
+            if _vdpara['vapp'] == 'yes':
+                virtapp_setPassword2AD(uid, newpw)
 
         response['Result'] = "OK"
         return HttpResponse(json.dumps(response), content_type='application/json')
@@ -2058,18 +2071,18 @@ def genVMDisks(tid, usage, uid):
             disks.append(d)
         else:
             if isImageWithDDisk(src_imgid):
-                d['file'] = '/storage/tmp/images/%s/data' % (dst_imgid)
+                if src_imgid == dst_imgid:
+                    d['file'] = '/storage/images/%s/data' % (dst_imgid)
+                else:
+                    d['file'] = '/storage/tmp/images/%s/data' % (dst_imgid)
                 d['mtype'] = 'normal'
                 disks.append(d)
 
-        #e['file']    = '/storage/images/data'
-        #e['mtype']   = 'multiattach'
-        #disks.append(e)
     if ins_id.find('PVD') == 0:
         trec = ectaskTransaction.objects.get(tid=tid)
 
-        c['file']    = '/storage/pimages/%s/%s/machine' % (uid, dst_imgid)
-        c['mtype']   = 'normal'
+        c['file'] = '/storage/images/%s/machine' % dst_imgid
+        c['mtype']   = 'multiattach'
         disks.append(c)
 
         if isImageWithDDisk(src_imgid):
@@ -2213,7 +2226,10 @@ def genRuntimeOptionForImageBuild(transid):
     user = tid_rec.user
     runtime_option["user"] = user
     user_obj = ecAccount.objects.get(userid=user)
-    user_vdpara = json.loads(user_obj.vdpara)
+    if len(user_obj.vdpara) > 0:
+        user_vdpara = json.loads(user_obj.vdpara)
+    else:
+        user_vdpara = {}
 
     ccobj       = ecServers.objects.get(ip0=ccip, role='cc')
     ccres_info  = ecCCResources.objects.get(ccmac0=ccobj.mac0)
@@ -2221,10 +2237,13 @@ def genRuntimeOptionForImageBuild(transid):
 
     # 0. get vm access protocol
     runtime_option['protocol'] =  getAccessProtocol(transid)
-    if user_vdpara['usb'] == '0':
-        runtime_option['usb_enabled'] = 0
+    if "usb" in user_vdpara.keys():
+        if user_vdpara['usb'] == '0':
+            runtime_option['usb_enabled'] = 0
+        else:
+            runtime_option['usb_enabled'] = 1
     else:
-        runtime_option['usb_enabled'] = 1
+        runtime_option['usb_enabled'] = 0
 
     # 1. general option
     img_info                        = ecImages.objects.get(ecid = src_imgid)
@@ -2886,7 +2905,7 @@ def image_create_task_getsubmitprogress(request, srcid, dstid, insid):
         }
         response = json.dumps(payload)
 
-    # logger.error("lkf: get progress = %s", response)
+    logger.error("get submit progress = %s", response)
     return HttpResponse(response, content_type="application/json")
 
 def image_modify_task_start(request, srcid):
@@ -4143,14 +4162,61 @@ def list_nc_servers(request):
 
 # core table functions for ecServers
 def list_servers_by_role(request, roletype):
+    response = {}
     if roletype == 'cc':
         return list_cc_servers(request)
 
     if roletype == 'nc':
         return list_nc_servers(request)
 
-    response['Records'] = data
     response['Result'] = 'OK'
+
+    retvalue = json.dumps(response)
+    return HttpResponse(retvalue, content_type="application/json")
+
+def list_servers_all(request):
+    response = {}
+
+    if amIclc() and amIcc() and amInc():
+        response['arch'] = 'allinone'
+        clcobj = ecServers.objects.get(role='clc')
+        response['mlist']   = clcobj.ip0
+
+    if amIclc() and amIcc() and not amInc():
+        response['arch'] = 'singlecluster'
+
+        clcobj = ecServers.objects.get(role='clc')
+        mlist = {}
+        mlist['clc'] = clcobj.ip0
+        mlist['ncs'] = []
+
+        ncobjs = ecServers.objects.filter(role='nc')
+        for ncobj in ncobjs:
+            mlist['ncs'].append(ncobj.ip0)
+        response['mlsit'] = mlist
+
+    if amIclc() and not amIcc() and not amInc():
+        response['arch'] = 'dist'
+
+        clcobj = ecServers.objects.get(role='clc')
+        mlist = {}
+        mlist['clc'] = clcobj.ip0
+        mlist['ccs'] = []
+
+        ccobjs = ecServers.objects.filter(role='cc')
+        for ccobj in ccobjs:
+            ccjson = {}
+            ccjson['ccip'] = ccobj.ip0
+            ccjson['ccname'] = ccobj.ccname
+
+            ncobjs = ecServers.objects.filter(role='cc', ccname=ccobj.ccname)
+            ncjson = [];
+            for ncobj in ncobjs:
+                ncjson.append(ncobj.ip0)
+            ccjson['ncs'] = ncjson
+
+            mlist['ccs'].append(ccjson)
+        response['mlsit'] = mlist
 
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
@@ -4378,11 +4444,11 @@ def delet_task_by_id(tid):
     except Exception as e:
         response = {}
         response['Result'] = 'OK'
-
+        logger.error("--- --- --- delet_task_by_id with exception = %s" % str(e) )
+        releaseRuntimeOptionForImageBuild(tid)
+        trec.delete()
         retvalue = json.dumps(response)
         return HttpResponse(retvalue, content_type="application/json")
-
-
 
 def delete_tasks(request):
     tid = request.POST['tid']
@@ -4535,8 +4601,6 @@ def update_vds(request):
             fake_tid = '%s:%s:%s' % (rec.imageid, rec.imageid, rec.insid)
             if isImageWithDDisk(rec.imageid):
                 makeDataDiskReady(fake_tid, rec.user)
-            if rec.insid.find("PVD") == 0:
-                makeSystemDiskReady(fake_tid, rec.user)
     except Exception as e:
         logger.error('update_vds error=%s' % str(e))
 
@@ -4802,20 +4866,25 @@ def list_images(request):
 def delete_images(request):
     response = {}
     rec = ecImages.objects.get(id=request.POST['id'])
+    tid_recs = ectaskTransaction.objects.filter(srcimgid=rec.ecid)
+    vds_recs = ecVDS.objects.filter(imageid=rec.ecid)
+    if tid_recs.count() != 0 or vds_recs.count() != 0:
+        response['Result'] = 'ERROR'
+        response['Message'] = "Need to delete this images's running TASKs and VDS first"
+    else:
+        ecImages_auth.objects.filter(ecid=rec.ecid).delete()
+        # delete image files
+        imgpath = '/storage/images/' + rec.ecid
+        if os.path.exists(imgpath):
+            shutil.rmtree(imgpath)
+        if rec.img_usage == 'server':
+            dbpath = '/storage/space/database/images/' + rec.ecid
+            if os.path.exists(dbpath):
+               shutil.rmtree(dbpath)
 
-    # delete image files
-    imgpath = '/storage/images/' + rec.ecid
-    if os.path.exists(imgpath):
-        shutil.rmtree(imgpath)
-    if rec.img_usage == 'server':
-        dbpath = '/storage/space/database/images/' + rec.ecid
-        if os.path.exists(dbpath):
-           shutil.rmtree(dbpath)
-
-    # delete image records
-    rec.delete()
-
-    response['Result'] = 'OK'
+        # delete image records
+        rec.delete()
+        response['Result'] = 'OK'
 
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
@@ -4995,8 +5064,9 @@ def update_active_account(request):
     u.save()
     ecu.save()
 
-    _vdpara = json.loads(ecu.vdpara)
-    virtapp_updateAccount2AD(u.username, _vdpara['vapp'])
+    if len(ecu.vdpara) > 0:
+        _vdpara = json.loads(ecu.vdpara)
+        virtapp_updateAccount2AD(u.username, _vdpara['vapp'])
 
     response['Result'] = 'OK'
     retvalue = json.dumps(response)
@@ -5753,9 +5823,10 @@ def verifySessionKey(session_key):
 def list_myvapps(uid):
     vapp = []
     userobj = ecAccount.objects.get(userid = uid)
-    para = json.loads(userobj.vdpara)
-    if para['vapp'] != 'yes':
-        return vapp
+    if len(userobj.vdpara) > 0:
+        para = json.loads(userobj.vdpara)
+        if para['vapp'] != 'yes':
+            return vapp
 
     # check vapp list available for this user
     return list_my_availed_vapp
@@ -5872,11 +5943,8 @@ def list_myvds(request):
             vd['dataper'] = 100
 
         logger.error("start to prepare system disk of %s ... ..." % fake_tid)
-        if vds_rec.insid.find('PVD') == 0:
-            vd['systemdisk'], vd['systemper'] = makeSystemDiskReady(fake_tid, _user)
-        else:
-            vd['systemdisk'] = "ready"
-            vd['systemper'] = 100
+        vd['systemdisk'] = "ready"
+        vd['systemper'] = 100
 
         logger.error("system disk of VD/PVD is ready")
         vd['id'] = 'myvd' + str(index)
@@ -5888,10 +5956,13 @@ def list_myvds(request):
     response['data'] = vds
     logger.error("user %s own virtual desktop as below: %s" %(_user, vds))
 
-    para = json.loads(ua.vdpara)
-    if para['vapp'] == 'yes':
-        myvapps = list_my_availed_vapp(_user)
-        response['vapp'] = myvapps['data']
+    if len(ua.vdpara) > 0:
+        para = json.loads(ua.vdpara)
+        if para['vapp'] == 'yes':
+            myvapps = list_my_availed_vapp(_user)
+            response['vapp'] = myvapps['data']
+        else:
+            response['vapp'] = []
     else:
         response['vapp'] = []
     logger.error("user %s own virtual app as below: %s" %(_user, response['vapp']))
@@ -6140,6 +6211,7 @@ def rvd_get_rdp_url(request, srcid, dstid, insid):
 
     return rvd_get_rdp_para(request, srcid, dstid, insid)
 
+import random
 def vm_afterboot(request):
     logger.error('call vm_afterboot')
     # find tid record for this vm instance
@@ -6180,7 +6252,8 @@ def vm_afterboot(request):
 
             # set hostname
             myscript = myscript.replace("NAMEFLAG", "yes")
-            myscript = myscript.replace("new-host-name", runtime_option["user"])
+            hostname_tail = "%4x" % random.randint(0x0, 0xFFFF)
+            myscript = myscript.replace("new-host-name", runtime_option["user"] + "-" + hostname_tail.strip())
 
             # set ip/mask/gateway
             myscript = myscript.replace("IPFLAG", "yes")

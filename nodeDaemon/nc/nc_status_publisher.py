@@ -3,7 +3,6 @@ from luhyaapi.hostTools import *
 from luhyaapi.rabbitmqWrapper import *
 from luhyaapi.vboxWrapper import *
 from luhyaapi.settings import *
-
 import time, psutil, requests
 
 logger = getncdaemonlogger()
@@ -49,21 +48,6 @@ class nc_statusPublisher():
 
     def send_node_status_to_cc(self, node_status):
         simple_send(logger, self._ccip, 'cc_status_queue', json.dumps(node_status))
-
-# enhancement : http://www.tjansson.dk/2008/01/autofs-and-sshfs-the-perfect-couple/
-# use both sshfs and autofs
-def perform_mount():
-    # mount cc's /storage/space/ to local
-    if amIcc():
-        logger.error("I am nc and cc, no mount any more.")
-        return
-
-    ccip = getccipbyconf()
-    base_cmd = 'echo luhya | sshfs -o cache=yes,allow_other,password_stdin,reconnect luhya@%s:/storage/space /storage/space'
-
-    if not os.path.ismount('/storage/space'):
-        cmd = base_cmd % (ccip)
-        os.system(cmd)
 
 def getRuntimeOpiton():
     return ''
@@ -128,9 +112,6 @@ def registerMyselfasNC():
 def main():
     # read /storage/config/cc.conf to register itself to cc
     registerMyselfasNC()
-
-    if not isLNC():
-        perform_mount()
 
     publisher = nc_statusPublisher()
     publisher.run()

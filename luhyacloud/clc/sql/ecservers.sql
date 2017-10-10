@@ -1,1 +1,0 @@
-alter table clc_ecservers convert to character set utf8;

@@ -6,11 +6,9 @@ from luhyaapi.vboxWrapper import *
 from luhyaapi.clcAPIWrapper import *
 from luhyaapi.zmqWrapper import *
 import pika, json, time, shutil, os, commands, zmq
-import multiprocessing, pexpect
+import multiprocessing, pexpect, memcache
 
 logger = getncdaemonlogger()
-img_tasks_status = {}
-db_tasks_status  = {}
 my_semaphores = multiprocessing.Semaphore(get_desktop_res()['max_pboot_vms'])
 my_pboot_delay = get_desktop_res()['max_pboot_delay']
 
@@ -97,6 +95,34 @@ class prepareImageTaskThread(multiprocessing.Process):
     def forwardTaskStatus2CC(self, response):
         simple_send(logger, self.ccip, 'cc_status_queue', response)
 
+    def getImageTask(self, imgid, ttype):
+        worker = None
+        mc = memcache.Client(['127.0.0.1:11211'], debug=0)
+        key = str("%s#%s" % (ttype, imgid))
+        try:
+            worker = mc.get(key)
+        except Exception as e:
+            logger.error("getImageTask except = %s" % str(e))
+
+        return worker
+
+    def setImageTask(selfself, imgid, progress, ttype):
+        mc = memcache.Client(['127.0.0.1:11211'], debug=0)
+        key = str("%s#%s" % (ttype, imgid))
+        try:
+            mc.set(key, progress, 60*60)
+        except Exception as e:
+            logger.error("setImageTask except = %s" % str(e))
+
+    def deleteImageTask(self, imgid, ttype):
+        mc = memcache.Client(['127.0.0.1:11211'], debug=0)
+        key = str("%s#%s" % (ttype, imgid))
+        try:
+            mc.delete(key, 0)
+        except Exception as e:
+            logger.error("setImageTask except = %s" % str(e))
+
+
     def downloadFromCC2NC(self, data):
         logger.error('Enter downloadFromCC2NC  ... ...')
         locale_string = getlocalestring()
@@ -136,16 +162,15 @@ class prepareImageTaskThread(multiprocessing.Process):
             else:
                 payload['prompt'] = prompt
                 imgid = self.srcimgid
-                if imgid in img_tasks_status.keys():
-                    if not self.tid in img_tasks_status[imgid]['tids']:
-                        img_tasks_status[imgid]['tids'].apppend(self.tid)
-                    worker = img_tasks_status[imgid]['worker']
-                else:
-                    img_tasks_status[imgid]= {}
-                    img_tasks_status[imgid]['tids'] = [self.tid]
+                rsync_result = self.getImageTask(imgid, paras)
+                if rsync_result  == None:
                     worker = rsyncWorkerThread(logger, source, destination)
                     worker.start()
-                    img_tasks_status[imgid]['worker'] = worker
+                    self.setImageTask(imgid, {"progress": 0}, paras)
+                    logger.error("tid=%s start the image downloading worker %s" % (self.tid, worker))
+                else:
+                    logger.error("tid=%s share the image downloading worker" % (self.tid))
+
 
         if paras == 'db':
             prompt      = locale_string['prmptDfromCC2NC_db']
@@ -162,51 +187,57 @@ class prepareImageTaskThread(multiprocessing.Process):
             else:
                 payload['prompt'] = prompt
                 imgid = self.srcimgid
-                if imgid in db_tasks_status.keys():
-                    if not self.tid in db_tasks_status[imgid]['tids']:
-                        db_tasks_status[imgid]['tids'].apppend(self.tid)
-                    worker = self.db_tasks_status[imgid]['worker']
-                else:
-                    db_tasks_status[imgid]= {}
-                    db_tasks_status[imgid]['tids'] = [self.tid]
+                rsync_result = self.getImageTask(imgid, paras)
+                if rsync_result  == None:
                     worker = rsyncWorkerThread(logger, source, destination)
                     worker.start()
-                    db_tasks_status[imgid]['worker'] = worker
+                    self.setImageTask(imgid, {"progress": 0}, paras)
+                    logger.error("tid=%s start the data downloading worker %s" % (self.tid, worker))
+                else:
+                    logger.error("tid=%s share the data downloading worker %s" % (self.tid))
 
-
-        while True:
-            payload['progress'] = worker.getprogress()
-            payload['failed'] = worker.isFailed()
-            payload['done'] = worker.isDone()
-            if worker.isFailed():
-                logger.error(' ----- failed . ')
-                payload['failed']   = worker.isFailed()
-                payload['errormsg'] = worker.getErrorMsg()
-                payload['state']    = 'init'
+        if rsync_result == None:
+            while True:
+                time.sleep(2)
+                payload['progress'] = worker.getprogress()
+                payload['failed'] = worker.isFailed()
+                payload['done'] = worker.isDone()
+                if worker.isFailed():
+                    logger.error(' ----- failed . ')
+                    payload['failed'] = worker.isFailed()
+                    payload['errormsg'] = worker.getErrorMsg()
+                    payload['state'] = 'init'
+                    self.forwardTaskStatus2CC(json.dumps(payload))
+                    self.setImageTask(imgid, json.dumps(payload), paras)
+                    retvalue = "FALURE"
+                    break
+                elif worker.isDone():
+                    logger.error(' ----- Done . ')
+                    payload['progress'] = 0
+                    payload['done'] = 1
+                    self.forwardTaskStatus2CC(json.dumps(payload))
+                    self.setImageTask(imgid, json.dumps(payload), paras)
+                    break
+                else:
+                    logger.error('%s:progress = %s' % (self.tid, payload['progress']))
+                    self.forwardTaskStatus2CC(json.dumps(payload))
+                    self.setImageTask(imgid, json.dumps(payload), paras)
+        else:
+            while True:
+                time.sleep(2)
+                payload = self.getImageTask(imgid, paras)
+                payload = json.loads(payload)
+                payload['tid'] = self.tid
+                logger.error('%s:progress = %s' % (self.tid, payload['progress']))
                 self.forwardTaskStatus2CC(json.dumps(payload))
-                retvalue = "FALURE"
-                break
-            elif worker.isDone():
-                logger.error(' ----- Done . ')
-                payload['progress'] = 0
-                self.forwardTaskStatus2CC(json.dumps(payload))
-                break
-            else:
-                logger.error('progress = %s' % payload['progress'])
-                self.forwardTaskStatus2CC(json.dumps(payload))
-
-            time.sleep(2)
-
-        if worker.isFailed() or worker.isDone():
-            if paras == 'luhya':
-                del self.img_tasks_status[imgid]
-            if paras == 'db':
-                del self.db_tasks_status[imgid]
+                if payload['failed'] or payload['done']:
+                    logger.error("shared download thread is failed or done for tid=%s" % self.tid)
+                    break
 
         return retvalue
 
     def cloneImage(self, data):
-        logger.error('cloneImage start ... ...')
+        logger.error('cloneImage start for %s ... ...' % data['rsync'])
         retvalue = "OK"
         locale_string = getlocalestring()
 
@@ -328,9 +359,13 @@ class prepareImageTaskThread(multiprocessing.Process):
         data['rsync']   = 'luhya'
         try:
             if self.downloadFromWalrus2CC(data) == "OK":
+                logger.error("%s:downloadFromWalrus2CC = OK for image" % self.tid)
                 if self.downloadFromCC2NC(data) == "OK":
+                    logger.error("%s:downloadFromCC2NC = OK for image" % self.tid)
                     if self.cloneImage(data) == "OK":
+                        logger.error("%s:cloneImage = OK for image" % self.tid)
                         done_1 = True
+                        logger.error("%s:done_1 = True" % self.tid)
 
             if done_1 == True:
                 data['rsync'] = 'db'
@@ -341,18 +376,19 @@ class prepareImageTaskThread(multiprocessing.Process):
                 else:# clone D disk for user if needed
                     self.cloneImage(data)
                     done_2 = True
+                    logger.error("%s:done_2 = True" % self.tid)
 
             if done_1 == False or done_2 == False:
-                logger.error('send cmd image/prepare/failure ')
+                logger.error('%s:send cmd image/prepare/failure' % self.tid)
                 self.download_rpc.call(cmd="image/prepare/failure", tid=data['tid'], paras=data['rsync'])
             else:
-                logger.error('send cmd image/prepare/success ')
+                logger.error('%s:send cmd image/prepare/success' % self.tid)
                 self.download_rpc.call(cmd="image/prepare/success", tid=data['tid'], paras=data['rsync'])
                 payload = json.dumps(payload)
                 self.forwardTaskStatus2CC(payload)
         except Exception as e:
-            logger.error("prepareImageTask Exception: %s" % str(e))
-            logger.error('send cmd image/prepare/failure ')
+            logger.error("%s:prepareImageTask Exception: %s" % (self.tid, str(e)))
+            logger.error('%s:after exception, send cmd image/prepare/failure' % self.tid)
             self.download_rpc.call(cmd="image/prepare/failure", tid=data['tid'], paras=data['rsync'])
 
             payload['failed']   = 1
@@ -396,7 +432,7 @@ class SubmitImageTaskThread(multiprocessing.Process):
                 break
             if response['done'] == 1:
                 logger.error(' ----- done . ')
-                response['progress'] = 0
+                response['progress'] = 100
                 self.forwardTaskStatus2CC(json.dumps(response))
                 break
             else:
@@ -569,7 +605,7 @@ class SubmitImageTaskThread(multiprocessing.Process):
                 self.task_finished()
                 payload = json.dumps(payload)
                 self.forwardTaskStatus2CC(payload)
-
+                time.sleep(20)	
                 logger.error('send cmd image/submit/success whith payload=%s' % payload)
                 self.download_rpc.call(cmd="image/submit/success", tid=data['tid'], paras=data['rsync'])
 
@@ -736,16 +772,42 @@ class runImageTaskThread(multiprocessing.Process):
                 logger.error("--- --- --- vboxmgr is not running")
                 # every time before running, take a NEW snapshot
                 snapshot_name = "thomas"
-                if self.runtime_option['run_with_snapshot'] == 1 and self.insid.find("PVD") != 0:
-                    if vboxmgr.isSnapshotExist(snapshot_name):
-                        if self.insid.find('TMP') == 0:
-                            logger.error("--- --- --- vm %s DONOT restore snapshot " % vboxmgr.getVMName())
-                            pass
+                if self.runtime_option['run_with_snapshot'] == 1:
+                    if self.insid.find('TMP') == 0:
+                        # create snapshot if not exist
+                        # do nothing if exist
+                        if not vboxmgr.isSnapshotExist(snapshot_name):
+                            ret = vboxmgr.take_snapshot(snapshot_name)
+
+                    if self.insid.find('TVD') == 0:
+                        # create snapshot if not exist
+                        # restore snapshot if exist
+                        if not vboxmgr.isSnapshotExist(snapshot_name):
+                            ret = vboxmgr.take_snapshot(snapshot_name)
                         else:
-                            logger.error("--- --- --- vm %s is restore snapshot" % vboxmgr.getVMName())
                             ret = vboxmgr.restore_snapshot(snapshot_name)
-                    else:
-                        ret = vboxmgr.take_snapshot(snapshot_name)
+
+                    if self.insid.find('VD') == 0:
+                        # create snapshot if not exist
+                        # restore snapshot if exist
+                        if not vboxmgr.isSnapshotExist(snapshot_name):
+                            ret = vboxmgr.take_snapshot(snapshot_name)
+                        else:
+                            ret = vboxmgr.restore_snapshot(snapshot_name)
+
+                    if self.insid.find("PVD") == 0:
+                        # create snapshot if not exist
+                        # do nothing if exist
+                        if not vboxmgr.isSnapshotExist(snapshot_name):
+                            ret = vboxmgr.take_snapshot(snapshot_name)
+
+                    if self.insid.find('VS') == 0:
+                        # create snapshot if not exist
+                        # restore snapshot if exist
+                        if not vboxmgr.isSnapshotExist(snapshot_name):
+                            ret = vboxmgr.take_snapshot(snapshot_name)
+                        else:
+                            ret = vboxmgr.restore_snapshot(snapshot_name)
 
                 logger.error("--- --- --- check whether it is LNC")
                 if isLNC():

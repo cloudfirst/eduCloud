@@ -2,7 +2,7 @@ import requests, json
 from luhyaapi.settings import *
 from luhyaapi.educloudLog import *
 
-logger = geteducloudlogger()
+logger = getluhyaapilogger()
 
 def getWalrusInfo(clcip):
     if DAEMON_DEBUG == True:

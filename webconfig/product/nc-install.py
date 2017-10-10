@@ -1,6 +1,30 @@
 import os, commands, sys, getopt
 import time
 
+def restore_apt():
+    if os.path.exists('/etc/apt/sources.list.luhya'):
+        cmd_line = 'sudo cp /etc/apt/sources.list.luhya /etc/apt/sources.list'
+        commands.getoutput(cmd_line)
+
+        cmd_line = 'sudo rm /etc/apt/sources.list.luhya'
+        commands.getoutput(cmd_line)
+
+def prepare():
+    cmd_line = "sudo apt-get install wget curl"
+    os.system(cmd_line)
+
+def chownDir():
+    cmd_line = 'sudo chown -R luhya:luhya /storage && sudo chmod -R 777 /storage'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /usr/local/www && sudo chmod -R 777 /usr/local/www'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /usr/local/nodedaemon && sudo chmod -R 777 /usr/local/nodedaemon'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /usr/local/webconfig && sudo chmod -R 777 /usr/local/webconfig'
+    commands.getoutput(cmd_line)
+    cmd_line = 'sudo chown -R luhya:luhya /var/log/educloud'
+    commands.getoutput(cmd_line)
+
 def checkPackage( pname ):
     cmd_line = 'dpkg -l | grep %s' % pname
     output = commands.getoutput(cmd_line)
@@ -10,9 +34,13 @@ def checkPackage( pname ):
        return False
 
 def usage():
-    print "Usage : nc-install [-h hostip -v [vbox|ndp|kvm]]"
+    print "Usage : nc-install [-h hostip ] [-v vbox|ndp|kvm] [ -m w|a ]"
 
 def main(argv):
+    if len(argv) < 2:
+        usage()
+        exit(0)
+
     DST_IP = '121.41.80.147'
     HYPERVISOR = 'ndp'
     MODE = "w"
@@ -134,15 +162,7 @@ def main(argv):
         cmd_line = 'sudo apt-get -y install nodedaemon-nc-kvm'
         os.system(cmd_line)
 
-    cmd_line = 'sudo chown -R luhya:luhya /storage && sudo chmod -R 777 /storage'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/nodedaemon && sudo chmod -R 777 /usr/local/nodedaemon'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /var/log/educloud'
-    commands.getoutput(cmd_line)
-
-    cmd_line = 'sudo rm /var/cache/apt/archives/*.deb'
-    os.system(cmd_line)
+    chownDir()
 
     ##############################################################################
     # 8. install 3rd python and rsync lib
@@ -151,6 +171,9 @@ def main(argv):
     os.system(cmd_line)
 
     cmd_line = 'tar vxf pip.tar -C /tmp/'
+    commands.getoutput(cmd_line)
+
+    cmd_line = 'cd /tmp && rm rsync_16.0.4.orig.tar.gz Django-1.6.1.tar.gz MySQL*.tar.gz '
     commands.getoutput(cmd_line)
 
     cmd_line = 'sudo dpkg -i /tmp/*.deb'
@@ -165,7 +188,7 @@ def main(argv):
     if checkPackage('nodedaemon-cc') == False:
         ccname = raw_input("Enter Cluster Name: ")
         ccnamestr = "ccname=%s" % ccname
-        ccip   = raw_input("Enter Cluster IP  : ")
+        ccip   = raw_input("Enter Cluster IP(cc)  : ")
         ccipstr = "IP=%s\n" % ccip
 
         with open('/storage/config/cc.conf', 'w') as myfile:
@@ -179,9 +202,9 @@ def main(argv):
     if ccip == "127.0.0.1":
         pass
     else:
-        cmd_line = 'sudo -u luhya ssh-keygen'
+        cmd_line = 'sudo -u luhya ssh-keygen -b 1024'
         os.system(cmd_line)
-        cmd_line = "sudo -u luhya cat /home/luhya/.ssh/id_rsa.pub | ssh luhya@%s 'cat >> ~/.ssh/authorized_keys'" % ccip
+        cmd_line = "sudo -u luhya ssh-copy-id -i %s " % ccip
         os.system(cmd_line)
         cmd_line = "sudo -u luhya ssh %s 'exit' " % ccip
         os.system(cmd_line)
@@ -190,17 +213,11 @@ def main(argv):
     ##############################################################################
     # 14. clear download packages
     ##############################################################################
-    cmd_line = 'sudo rm /var/cache/apt/archives/*.deb'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo rm /var/cache/apt/archives/partial/*.deb'
-    commands.getoutput(cmd_line)
+    chownDir()
+    restore_apt()
 
-    cmd_line = 'sudo chown -R luhya:luhya /storage && sudo chmod -R 777 /storage'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /usr/local/nodedaemon && sudo chmod -R 777 /usr/local/wnodedaemonww'
-    commands.getoutput(cmd_line)
-    cmd_line = 'sudo chown -R luhya:luhya /var/log/educloud'
-    commands.getoutput(cmd_line)
+    cmd_line = 'wget http://%s/scripts/educloud-check.py' % DST_IP
+    os.system(cmd_line)
 
     print '----------------------------------------------------------'
     print  'Now system will reboot to enable all services ... ... ...'

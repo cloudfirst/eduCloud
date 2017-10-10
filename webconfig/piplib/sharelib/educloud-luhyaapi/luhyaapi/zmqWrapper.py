@@ -1,7 +1,7 @@
 import zmq
 
 from luhyaapi.educloudLog import *
-logger = getclclogger()
+logger = getluhyaapilogger()
 
 CLC_CMD_QUEUE_PORT = 9997
 CC_CMD_QUEUE_PORT  = 9998

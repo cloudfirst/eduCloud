@@ -7,9 +7,8 @@ from IPy import IP
 
 from luhyaapi.educloudLog import *
 from luhyaapi.settings import *
-logger = getclclogger()
 
-
+logger = getluhyaapilogger()
 
 # PUBLIC or PRIVATE
 def getIPType(ipaddr):
@@ -184,16 +183,17 @@ def getHostNetInfo():
     }
     index = 0
     list_of_nic = netifaces.interfaces()
+
     for nic in list_of_nic:
         if not nic.startswith('lo'):
-            ipstr = 'ip' + str(index)
-            macstr = 'mac' + str(index)
             addr = netifaces.ifaddresses(nic)
             if netifaces.AF_INET in addr.keys():
+                ipstr = 'ip' + str(index)
+                macstr = 'mac' + str(index)
                 hostnetinfo[ipstr]  = addr[netifaces.AF_INET][0]['addr']
-            if netifaces.AF_LINK in addr.keys():
-                hostnetinfo[macstr] = addr[netifaces.AF_LINK][0]['addr']
-            index = index + 1
+                if netifaces.AF_LINK in addr.keys():
+                    hostnetinfo[macstr] = addr[netifaces.AF_LINK][0]['addr']
+                index = index + 1
 
     hostnetinfo['exip'] = hostnetinfo['ip0']
     return hostnetinfo
@@ -267,7 +267,7 @@ def getSysMemUtil():
 import socket, commands
 
 def DoesServiceExist(host, port, protocol='tcp'):
-    # logger.error("DoesServiceExist at port=%s --- --- ", port)
+    logger.error("DoesServiceExist at port=%s --- --- ", port)
     try:
         if protocol == 'tcp':
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

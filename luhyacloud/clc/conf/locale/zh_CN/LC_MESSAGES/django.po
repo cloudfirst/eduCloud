@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-04-03 09:55+0000\n"
+"POT-Creation-Date: 2017-06-22 14:55+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -180,128 +180,131 @@ msgstr "虚拟机状态数据"
 msgid "NDP Service"
 msgstr "AMQP服务"
 
-#: views.py:608
+#: views.py:618
+#, fuzzy, python-format
 msgid "available nc %s Memory is "
 msgstr "工作服务器可用的资源是 "
 
-#: views.py:608 views.py:611 views.py:614 views.py:705 views.py:708
-#: views.py:711
+#: views.py:618 views.py:621 views.py:624 views.py:719 views.py:722
+#: views.py:725
 msgid ", but required is "
 msgstr "，但是虚拟机要求的是 "
 
-#: views.py:611
+#: views.py:621
+#, fuzzy, python-format
 msgid "available nc %s CPU is "
 msgstr "工作服务器可用的资源是 "
 
-#: views.py:614
+#: views.py:624
+#, fuzzy, python-format
 msgid "available nc %s Disk is "
 msgstr "工作服务器可用的资源是 "
 
-#: views.py:643
+#: views.py:653
 msgid "Can't Find appropriate cluster machine and node machine ."
 msgstr "没有找到满足虚拟机运行资源要求的工作服务器。"
 
-#: views.py:705 views.py:708 views.py:711
+#: views.py:719 views.py:722 views.py:725
 msgid "available nc="
 msgstr "工作服务器可用的资源是 "
 
-#: views.py:705 views.py:711
+#: views.py:719 views.py:725
 msgid " Memory is "
 msgstr "内存"
 
-#: views.py:708
+#: views.py:722
 msgid " CPU usage is "
 msgstr "CPU占用率"
 
-#: views.py:751 views.py:779
+#: views.py:765 views.py:793
 msgid "account is not activated."
 msgstr "账号还未激活！"
 
-#: views.py:756
+#: views.py:770
 msgid "Admin is NOT allowd to login"
 msgstr "不允许管理员登陆！"
 
-#: views.py:768 views.py:794
+#: views.py:782 views.py:808
 msgid "account is invalid"
 msgstr "账号无效！"
 
-#: views.py:784
+#: views.py:798
 msgid "Only Admin is allowd to login"
 msgstr "只允许管理员登陆！"
 
-#: views.py:903
+#: views.py:917
 msgid "duplicated user name: "
 msgstr "重复的用户名"
 
-#: views.py:943
+#: views.py:957
 msgid "duplicated user name."
 msgstr "重复的用户名"
 
-#: views.py:1041 views.py:2400 views.py:2424 views.py:2446 views.py:2464
-#: views.py:2483 views.py:2506 views.py:2858 views.py:2878 views.py:2900
-#: views.py:3056 views.py:3078 views.py:5303 templates/clc/error.html:34
+#: views.py:1069 views.py:2453 views.py:2477 views.py:2499 views.py:2517
+#: views.py:2536 views.py:2559 views.py:2915 views.py:2935 views.py:2957
+#: views.py:3113 views.py:3135 views.py:5364 templates/clc/error.html:34
 msgid "Error Report"
 msgstr "错误报告"
 
-#: views.py:1042
+#: views.py:1070
 msgid "user Role MUST be set before approved."
 msgstr "批准前必须设置用户角色。"
 
-#: views.py:1043
+#: views.py:1071
 msgid "Please edit user's role first"
 msgstr "请编辑用户角色。"
 
-#: views.py:1052
+#: views.py:1080
 msgid "user"
 msgstr "用户"
 
-#: views.py:1052
+#: views.py:1080
 msgid "is activated now."
 msgstr "已经激活了。"
 
-#: views.py:1079
+#: views.py:1117
 msgid "Password is not correct!"
 msgstr "密码不正确。"
 
-#: views.py:1092
+#: views.py:1130
 msgid "System Run-time Status Overview"
 msgstr "系统运行状态"
 
-#: views.py:1105
+#: views.py:1143
 msgid "Account Management"
 msgstr "用户账户管理"
 
-#: views.py:1119
+#: views.py:1157
 msgid "Images Management"
 msgstr "镜像文件管理"
 
-#: views.py:1180
+#: views.py:1218
 msgid "Cloud Control Management"
 msgstr "云控制器管理"
 
-#: views.py:1239
+#: views.py:1277
 msgid "Cloud Walrus Management"
 msgstr "云存储控制器管理"
 
-#: views.py:1255
+#: views.py:1293
 msgid "Cloud Cluster Management"
 msgstr "云集群控制器管理"
 
-#: views.py:1308 templates/clc/clc_mgr.html:196 templates/clc/images.html:13
+#: views.py:1346 templates/clc/clc_mgr.html:196 templates/clc/images.html:13
 #: templates/clc/walrus_mgr.html:142
 msgid "Edit Permission"
 msgstr "权限修改"
 
-#: views.py:1327
+#: views.py:1365
 msgid "Cloud Node Management"
 msgstr "云工作服务器管理"
 
-#: views.py:1359
+#: views.py:1397
 msgid ""
 "<div class=\"col-lg-6\"><p>detail information is NOT available.</p></div>"
 msgstr "<div class=\"col-lg-6\"><p>无法获取详细信息。</p></div>"
 
-#: views.py:1377
+#: views.py:1415
 msgid ""
 "\n"
 "                <p class=\"list-group-item\">\n"
@@ -315,115 +318,115 @@ msgstr ""
 "                </p>\n"
 "        "
 
-#: views.py:1424
+#: views.py:1462
 msgid "Cloud Local Node Management"
 msgstr "云本地工作节点管理"
 
-#: views.py:1436
+#: views.py:1474
 msgid "Cloud Terminal Management"
 msgstr "云终端管理"
 
-#: views.py:1448
+#: views.py:1486
 msgid "Hosts Management"
 msgstr "主机管理"
 
-#: views.py:1460
+#: views.py:1498
 msgid "System Settings Management"
 msgstr "系统参数设置"
 
-#: views.py:1472
+#: views.py:1510
 msgid "Cloud Server Management"
 msgstr "云服务器管理"
 
-#: views.py:1485
+#: views.py:1523
 msgid "Remote Cloud Desktop Management"
 msgstr "远程云桌面管理"
 
-#: views.py:1498
+#: views.py:1536
 msgid "Local Cloud Desktop Management"
 msgstr "本地云桌面管理"
 
-#: views.py:1511
+#: views.py:1549
 msgid "Tasks Management"
 msgstr "系统任务管理"
 
-#: views.py:1529
+#: views.py:1567
 msgid "Administrator Tools"
 msgstr "管理员工具"
 
-#: views.py:1869
+#: views.py:1907
 msgid "Configure CC Network Resources"
 msgstr "设置集群网络参数"
 
-#: views.py:2237
+#: views.py:2278
 msgid "Need more rdp port resources!."
 msgstr "需要更多的RDP端口资源"
 
-#: views.py:2280
+#: views.py:2325
 msgid "Need more ether resources."
 msgstr "需要更多的IP/MAC资源"
 
-#: views.py:2324
+#: views.py:2369
 msgid "Need more Proxy Web IP resources for Cluster."
 msgstr "需要更多的WEB代理IP资源"
 
-#: views.py:2393
+#: views.py:2446
 msgid "cloud desktop"
 msgstr "本地云桌面"
 
-#: views.py:2465
+#: views.py:2518
 msgid "current user not allowed to create new images"
 msgstr "当前用户没有权限来创建新的镜像文件。"
 
-#: views.py:2466 views.py:3058
+#: views.py:2519 views.py:3115
 msgid "Ask eduCloud.admin to assign CREATE rigth."
 msgstr "向系统管理员申请CREATE权限。"
 
-#: views.py:2859
+#: views.py:2916
 msgid "current user not allowed to modify images"
 msgstr "当前用户没有权限来修改镜像文件。"
 
-#: views.py:2860
+#: views.py:2917
 msgid "Ask eduCloud.admin to assign WRITE rigth."
 msgstr "向系统管理员申请WRITE权限。"
 
-#: views.py:2922
+#: views.py:2979
 msgid "image build"
 msgstr ""
 
-#: views.py:3057
+#: views.py:3114
 msgid "current user not allowed to create new VM"
 msgstr "当前用户没有权限来创建新的虚拟机。"
 
-#: views.py:3079
+#: views.py:3136
 msgid "current user not allowed to manage any cluster"
 msgstr "当前用户没有权限来修改镜像文件。"
 
-#: views.py:3080
+#: views.py:3137
 msgid "Ask eduCloud.admin to assign a cluster to current user."
 msgstr "向系统管理员申请WRITE权限。"
 
-#: views.py:3085 views.py:3101
+#: views.py:3142 views.py:3158
 msgid "VM Create"
 msgstr "创建虚拟机"
 
-#: views.py:5304
+#: views.py:5365
 msgid "Only eduCloud.Admin can change image permission!"
 msgstr "只有系统管理员才能修改镜像文件访问权限！"
 
-#: views.py:5305
+#: views.py:5366
 msgid "Please logon as eduCloud.Admin."
 msgstr "请以系统管理员身份登录。"
 
-#: views.py:5338
+#: views.py:5399
 msgid "Image "
 msgstr "镜像文件"
 
-#: views.py:5587
+#: views.py:5648
 msgid "Server "
 msgstr "物理服务器"
 
-#: views.py:5632
+#: views.py:5693
 msgid "VM "
 msgstr "虚拟机"
 
@@ -609,7 +612,7 @@ msgstr " 系统工具"
 
 #: templates/clc/clctemplate.html:158
 msgid " Rule Engine"
-msgstr ""
+msgstr " 智能规则引擎"
 
 #: templates/clc/clctemplate.html:161
 msgid " Post Login Rule"
@@ -791,7 +794,7 @@ msgstr "密码不能为空"
 #: templates/clc/form/adm_add_new_account.html:31
 #: templates/clc/form/adm_add_new_account_batch.html:41
 #: templates/clc/form/request_new_account.html:25
-#: templates/clc/form/reset_account_password.html:30
+#: templates/clc/form/reset_account_password.html:32
 msgid "password Not Match."
 msgstr "密码不匹配"
 
@@ -890,7 +893,7 @@ msgstr "详细说明"
 #: templates/clc/form/edit_eip.html:63
 #: templates/clc/form/permission_edit.html:209
 #: templates/clc/form/request_new_account.html:126
-#: templates/clc/form/reset_account_password.html:111
+#: templates/clc/form/reset_account_password.html:122
 #: templates/clc/form/server_permission_edit.html:208
 #: templates/clc/form/update_account_profile.html:167
 #: templates/clc/form/vm_permission_edit.html:181
@@ -902,7 +905,7 @@ msgstr "提交"
 #: templates/clc/form/cc_modify_resource.html:393
 #: templates/clc/form/edit_eip.html:64
 #: templates/clc/form/request_new_account.html:127
-#: templates/clc/form/reset_account_password.html:112
+#: templates/clc/form/reset_account_password.html:123
 msgid "Reset Button"
 msgstr "重置"
 
@@ -1157,39 +1160,39 @@ msgstr "新账号申请已成功提交。"
 msgid "New account request Failed, try again."
 msgstr "新账号申请提交失败，请重试。"
 
-#: templates/clc/form/reset_account_password.html:20
+#: templates/clc/form/reset_account_password.html:21
 msgid "old password can't be empty."
 msgstr "旧密码不能为空。"
 
-#: templates/clc/form/reset_account_password.html:25
+#: templates/clc/form/reset_account_password.html:27
 msgid "new password can't be empty."
 msgstr "新密码不能为空。"
 
-#: templates/clc/form/reset_account_password.html:89
+#: templates/clc/form/reset_account_password.html:96
 msgid "Reset"
 msgstr "重设"
 
-#: templates/clc/form/reset_account_password.html:89
+#: templates/clc/form/reset_account_password.html:96
 msgid "'s Password"
 msgstr "的密码"
 
-#: templates/clc/form/reset_account_password.html:99
+#: templates/clc/form/reset_account_password.html:109
 msgid "Old Password*"
 msgstr "旧密码"
 
-#: templates/clc/form/reset_account_password.html:103
+#: templates/clc/form/reset_account_password.html:114
 msgid "New Password*"
 msgstr "输入新密码"
 
-#: templates/clc/form/reset_account_password.html:107
+#: templates/clc/form/reset_account_password.html:118
 msgid "New Password Again*"
 msgstr "确认新密码"
 
-#: templates/clc/form/reset_account_password.html:117
+#: templates/clc/form/reset_account_password.html:128
 msgid "Reset Account's Password Successfully."
 msgstr "用户账号密码重置成功。"
 
-#: templates/clc/form/reset_account_password.html:120
+#: templates/clc/form/reset_account_password.html:131
 msgid "Reset Account's Password Failed, try again."
 msgstr "用户账号密码重置失败，请重试。"
 
@@ -1588,7 +1591,7 @@ msgstr "抱歉，镜像文件运行失败，请重试。"
 
 #: templates/clc/wizard/image_create_wizard.html:327
 msgid "Submit Image Succeed. please click 'Next' button and finish it."
-msgstr "镜像文件提交成功，请点击‘下一步’"
+msgstr "镜像文件提交成功，请点击‘完成’"
 
 #: templates/clc/wizard/image_create_wizard.html:419
 msgid "Cancel"

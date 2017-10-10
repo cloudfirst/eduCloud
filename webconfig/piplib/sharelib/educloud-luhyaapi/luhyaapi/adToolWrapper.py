@@ -7,7 +7,7 @@ from ldap.controls import SimplePagedResultsControl
 import sys
 import ldap.modlist as modlist
 
-logger = geteducloudlogger()
+logger = getluhyaapilogger()
 
 # uri    = "ldaps://10.0.0.21"
 # binddn = "administrator@educloud.com"

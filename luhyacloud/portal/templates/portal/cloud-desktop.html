@@ -50,8 +50,8 @@
 
                             <div id="taskid_for_show_in_browser_{{ vd.id }}" style="display:none;">{{ vd.tid }}</div>
 							<div><p id="prepare_{{ vd.id }}">像文件准备中，请稍候再刷新</p></div>
-
                             <button type="button" id="stop_{{ vd.id }}" onclick="stop_tvd('{{ vd.id }}');"   class="btn">{% trans "Stop" %}</button>
+							<button type="button" id="restore_{{ vd.id }}" onclick="restore_tvd('{{ vd.id }}');"  class="btn">{% trans "Restore" %}</button>
 
 	        			</div>
 	        		</div>
@@ -191,12 +191,12 @@ var run_vapp_url    = "/virtapp/api/1.0/runvapp/";
 function create_tvd(id, srcid) {
     //console.log("create_tvd() is called.");
 
-    url = create_url + srcid;
-    postdata = {
+    var url = create_url + srcid;
+    var postdata = {
         'sid': $('#sid').text(),
     }
     $.post(url, postdata, function (data) {
-        items = [];
+        var items = [];
         $.each(data, function (key, val) {
             items[key] = val;
         });
@@ -206,7 +206,7 @@ function create_tvd(id, srcid) {
             return ;
         }
 
-        taskid = items['tid'];
+        var taskid = items['tid'];
         setTimeout( prepare_tvd, timer_interval, id,  taskid);
     });
 
@@ -221,17 +221,17 @@ function create_tvd(id, srcid) {
 ///////////////////////////////////////////////////////
 function start_tvd(id, taskid) {
     //console.log("start_tvd() is called.");
-    tmp = taskid.split(':')
-    srcid = tmp[0];
-    dstid = tmp[1];
-    insid = tmp[2];
+    var tmp = taskid.split(':')
+    var srcid = tmp[0];
+    var dstid = tmp[1];
+    var insid = tmp[2];
 
-    url = start_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
+    var url = start_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
     postdata = {
         'sid': $('#sid').text(),
     }
     $.post(url, postdata, function (data) {
-        items = [];
+        var items = [];
         $.each(data, function (key, val) {
             items[key] = val;
         });
@@ -241,7 +241,7 @@ function start_tvd(id, taskid) {
             return ;
         }
 
-        taskid = items['tid'];
+        var taskid = items['tid'];
         setTimeout( prepare_tvd, timer_interval, id, taskid);
     });
 
@@ -256,12 +256,12 @@ function start_tvd(id, taskid) {
 ///////////////////////////////////////////////////////
 function prepare_tvd(id, taskid) {
     //console.log("prepare_tvd() is called.");
-    tmp = taskid.split(':')
-    srcid = tmp[0];
-    dstid = tmp[1];
-    insid = tmp[2];
+    var tmp = taskid.split(':')
+    var srcid = tmp[0];
+    var dstid = tmp[1];
+    var insid = tmp[2];
 
-    url = prepare_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
+    var url = prepare_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
     postdata = {
         'sid': $('#sid').text(),
     }
@@ -276,6 +276,7 @@ function prepare_tvd(id, taskid) {
             return;
         }
 
+		var data;
         data['id']      = id;
         data['phase']   = 'preparing';
         data['state']   = 'downloading';
@@ -305,14 +306,14 @@ function prepare_tvd(id, taskid) {
 //
 ///////////////////////////////////////////////////////
 function get_progress(id, taskid, do2run) {
-    tmp = taskid.split(':')
-    srcid = tmp[0];
-    dstid = tmp[1];
-    insid = tmp[2];
-    url = progress_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
+    var tmp = taskid.split(':')
+    var srcid = tmp[0];
+    var dstid = tmp[1];
+    var insid = tmp[2];
+    var url = progress_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
 
     $.getJSON(url,function (data) {
-        items = [];
+        var items = [];
         $.each(data, function (key, val) {
             items[key] = val;
         });
@@ -332,22 +333,23 @@ function get_progress(id, taskid, do2run) {
 function run_tvd(id, taskid) {
     //console.log("run_tvd() is called.");
 
-    tmp = taskid.split(':')
-    srcid = tmp[0];
-    dstid = tmp[1];
-    insid = tmp[2];
+    var tmp = taskid.split(':')
+    var srcid = tmp[0];
+    var dstid = tmp[1];
+    var insid = tmp[2];
 
-    url = run_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
-    postdata = {
+    var url = run_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
+    var postdata = {
         'sid': $('#sid').text(),
     }
 
     $.post(url, postdata, function (data) {
-        items = [];
+        var  items = [];
         $.each(data, function (key, val) {
             items[key] = val;
         });
 
+		var data;
         data['id']      = id;
         data['phase']   = 'editing';
         data['state']   = 'booting';
@@ -376,15 +378,15 @@ function run_tvd(id, taskid) {
 function get_vmstatus(id, taskid) {
     //console.log("get_vmstatus() is called.");
 
-    tmp = taskid.split(':')
-    srcid = tmp[0];
-    dstid = tmp[1];
-    insid = tmp[2];
+    var tmp = taskid.split(':')
+    var srcid = tmp[0];
+    var dstid = tmp[1];
+    var insid = tmp[2];
 
-    url = vmstatus_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
+    var url = vmstatus_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
 
     $.getJSON(url,function (data) {
-        items = [];
+        var items = [];
         $.each(data, function (key, val) {
             items[key] = val;
         });
@@ -401,17 +403,17 @@ function sleep(sleepTime) {
 function stop_task(taskid) {
     //console.log("delete_task() is called.");
 
-	tmp = taskid.split(':')
-    srcid = tmp[0];
-    dstid = tmp[1];
-    insid = tmp[2];
-    url = stop_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
-    postdata = {
+	var tmp = taskid.split(':')
+    var srcid = tmp[0];
+    var dstid = tmp[1];
+    var insid = tmp[2];
+    var url = stop_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
+    var postdata = {
         'sid': $('#sid').text(),
     }
 
     $.post(url, postdata, function (data) {
-        items = [];
+        var items = [];
         $.each(data, function (key, val) {
             items[key] = val;
         });
@@ -423,12 +425,12 @@ function stop_task(taskid) {
 function delete_task(taskid) {
     //console.log("delete_task() is called.");
 
-    url = remove_task_url ;
-    postdata = {
+    var url = remove_task_url ;
+    var postdata = {
         tid:         taskid,
     }
     $.post(url, postdata, function (data) {
-        items = [];
+        var items = [];
         $.each(data, function (key, val) {
             items[key] = val;
         });
@@ -445,8 +447,8 @@ function delete_task(taskid) {
 ///////////////////////////////////////////////////////
 function stop_tvd(id) {
     //console.log("stop_tvd() is called.");
-    taskid = $('#taskid_for_show_in_browser_' + id ).text();
-	insid = taskid.split(":")[2]
+    var taskid = $('#taskid_for_show_in_browser_' + id ).text();
+	var insid = taskid.split(":")[2]
 	if (insid.indexOf("VD") == 0) {
 		delete_task(taskid);
 	}
@@ -458,13 +460,17 @@ function stop_tvd(id) {
     }
 }
 
+function restore_tvd(id) {
+	var taskid = $('#taskid_for_show_in_browser_' + id ).text();
+	delete_task(taskid);
+}
 
 function errorMsgBox(msg) {
     alert(msg);
 }
 
 function startVD( ecid, id ) {
-    taskid = $('#taskid_for_show_in_browser_' + id ).text();
+    var taskid = $('#taskid_for_show_in_browser_' + id ).text();
     if ( taskid == '' ) {
         items = create_tvd(id, ecid);
     } else {
@@ -473,24 +479,24 @@ function startVD( ecid, id ) {
 }
 
 function show_by_browser( id ) {
-    taskid = $('#taskid_for_show_in_browser_' + id ).text();
-    tmp = taskid.split(':')
-    srcid = tmp[0];
-    dstid = tmp[1];
-    insid = tmp[2];
+    var taskid = $('#taskid_for_show_in_browser_' + id ).text();
+    var tmp = taskid.split(':')
+    var srcid = tmp[0];
+    var dstid = tmp[1];
+    var insid = tmp[2];
 
-    url = get_rdp_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
-    postdata = {
+    var url = get_rdp_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
+    var postdata = {
         'sid': $('#sid').text(),
     }
     $.post(url, postdata, function (data) {
-        items = [];
-        flag = 1;
+        var items = [];
+        var flag = 1;
         $.each(data, function (key, val) {
             items[key] = val;
         });
 
-        protocol = items['protocol'];
+        var protocol = items['protocol'];
         if (protocol != "RDP" ) {
             alert("请在瘦终端上链接并显示云桌面！")
         } else {
@@ -525,26 +531,27 @@ function delete_form(form_name) {
 
 
 function show_by_xfreerdp( id ) {
-    taskid = $('#taskid_for_show_in_browser_' + id ).text();
-    tmp = taskid.split(':')
-    srcid = tmp[0];
-    dstid = tmp[1];
-    insid = tmp[2];
+    var taskid = $('#taskid_for_show_in_browser_' + id ).text();
+    var tmp = taskid.split(':')
+    var srcid = tmp[0];
+    var dstid = tmp[1];
+    var insid = tmp[2];
 
-    url = get_rdp_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
-    postdata = {
+    var url = get_rdp_url + $.trim(srcid) + "/" + $.trim(dstid) + "/" + $.trim(insid);
+    var postdata = {
         'sid': $('#sid').text(),
     }
     $.post(url, postdata, function (data) {
-        items = [];
-        flag = 1;
+        var items = [];
+        var flag = 1;
         $.each(data, function (key, val) {
             items[key] = val;
         });
 
-        protocol = items['protocol'];
-        ostype = getOSType();
+        var protocol = items['protocol'];
+        var ostype = getOSType();
 
+		var cmd;
         if (ostype == "windows") {
             cmd = "mstsc /f /v:" + items['rdp_ip'] + ':' + items['rdp_port']
         } else {
@@ -576,20 +583,21 @@ function display_vm_window(id) {
 
 function gui_update(items, do2run) {
     //console.log("gui_update() is called.");
-    id       = items['id'];
-    phase    = items['phase'];
-    state    = items['state'];
-    progress = items['progress'];
-    taskid   = items['tid'];
-    vm_prompt   = items['prompt'];
-    errormsg = items['errormsg'];
-    failed   = items['failed'];
+    var id       = items['id'];
+    var phase    = items['phase'];
+    var state    = items['state'];
+    var progress = items['progress'];
+    var taskid   = items['tid'];
+    var vm_prompt   = items['prompt'];
+    var errormsg = items['errormsg'];
+    var failed   = items['failed'];
 
     if (phase == 'preparing') {
         if ( state == 'init') {
             $('#run_'  + id).addClass('disabled');
             $('#show_' + id).addClass('disabled');
             $('#stop_' + id).removeClass('disabled');
+            $('#restore_' + id).removeClass('disabled');
 
             $('#progress_' + id).css('display', 'none');
             $('#error_msg_' + id).css('display', 'none');
@@ -605,6 +613,7 @@ function gui_update(items, do2run) {
             $('#run_'  + id).addClass('disabled');
             $('#show_' + id).addClass('disabled');
             $('#stop_' + id).removeClass('disabled');
+            $('#restore_' + id).removeClass('disabled');
 
             $('#progress_'    + id).css('display', 'block');
             $('#progressbar_' + id).css('width', progress + '%');
@@ -622,6 +631,7 @@ function gui_update(items, do2run) {
             $('#run_'  + id).addClass('disabled');
             $('#show_' + id).addClass('disabled');
             $('#stop_' + id).removeClass('disabled');
+            $('#restore_' + id).removeClass('disabled');
 
             $('#progress_' + id).css('display', 'none');
             $('#error_msg_' + id).css('display', 'none');
@@ -642,6 +652,7 @@ function gui_update(items, do2run) {
             $('#run_'  + id).removeClass('disabled');
             $('#show_' + id).addClass('disabled');
             $('#stop_' + id).addClass('disabled');
+            $('#restore_' + id).addClass('disabled');
 
             $('#progress_' + id).css('display', 'none');
             $('#error_msg_' + id).css('display', 'none');
@@ -657,6 +668,7 @@ function gui_update(items, do2run) {
             $('#run_'  + id).addClass('disabled');
             $('#show_' + id).addClass('disabled');
             $('#stop_' + id).removeClass('disabled');
+            $('#restore_' + id).removeClass('disabled');
 
             $('#progress_' + id).css('display', 'none');
 
@@ -672,6 +684,7 @@ function gui_update(items, do2run) {
             $('#run_'  + id).addClass('disabled');
             $('#show_' + id).removeClass('disabled');
             $('#stop_' + id).removeClass('disabled');
+            $('#restore_' + id).removeClass('disabled');
 
             $('#progress_' + id).css('display', 'none');
             $('#error_msg_' + id).css('display', 'none');
@@ -688,20 +701,28 @@ function gui_update(items, do2run) {
 
 function init_GUI() {
     var data = {};
+    var insid;
     {% for vd in vds %}
         {% if vd.tid == '' %}
             $('#run_{{ vd.id }}').removeClass('disabled');
             $('#show_{{ vd.id }}').addClass('disabled');
             $('#stop_{{ vd.id }}').addClass('disabled');
+            $('#restore_{{ vd.id }}').hide();
         {% else %}
         	data['phase']   = '{{ vd.phase }}';
 			data['state']   = '{{ vd.state}}';
 			data['tid']     = '{{ vd.tid }}',
         	insid = data['tid'].split(":")[2]
+        	if (insid.indexOf("PVD") == 0) {
+        		$('#restore_{{ vd.id }}').show();
+        	} else  {
+        		$('#restore_{{ vd.id }}').hide();
+        	}
         	if ((insid.indexOf("VD") == 0 || insid.indexOf("PVD") == 0) && data['phase'] == "" && data['state'] == "" ) {
 				$('#run_{{ vd.id }}').removeClass('disabled');
             	$('#show_{{ vd.id }}').addClass('disabled');
             	$('#stop_{{ vd.id }}').addClass('disabled');
+            	$('#restore_{{ vd.id }}').addClass('disabled');
         	} else {
         		data['id']      = '{{ vd.id }}'
 				data['promt']   = '';
