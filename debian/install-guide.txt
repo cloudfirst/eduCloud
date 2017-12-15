@@ -270,7 +270,7 @@ vd-nc:  /storage/space/{software/* ,  pub-data/* , prv-data/user-id/*}
 
 
 ############################
-# 7. get server's CPU info 
+# 7. get server's CPU info
 ############################
 - find the number of physical CPUs:
   cat /proc/cpuinfo | grep "^physical id" | sort | uniq | wc -l
@@ -293,10 +293,10 @@ vd-nc:  /storage/space/{software/* ,  pub-data/* , prv-data/user-id/*}
   it could be located on either clc or cc server
 
 ############################################
-# 9. network configuration for node & vms 
+# 9. network configuration for node & vms
 ############################################
 
-9.1 The network toplogy of cloud 
+9.1 The network toplogy of cloud
 flat   mode: all node & controller on same LAN
 tree   mode: all controller on same LAN, each cluster on its own LAN
 forest mode: controller distributed on different LAN(talk by public IP), each cluster on its own LAN
@@ -307,8 +307,8 @@ Server VMs:   all get IP via DHCP
 
 9.3 access mode
 9.3.1 access from inside
-Desktop VMs: 
-- (PUBLIC  mode)by ncip:port, 
+Desktop VMs:
+- (PUBLIC  mode)by ncip:port,
 - (PRIVATE mode)by ccip:port -> ncip:port
 
 Server VMs:
@@ -332,7 +332,7 @@ Server VMs:
   * tree   mode:  on any physical server in cluster LAN, prefer cc
   * forest mode:  on any physical server in cluster LAN, prefer cc
 
-- deploy with switch's DHCP 
+- deploy with switch's DHCP
   * require to enable fixed IP assignment by mac address
 - deploy with private DHCP
   * use dnsmasq as DHCP server, with script to notify clc {add/del, IP, MAC} pair
@@ -444,6 +444,34 @@ iptables -A FORWARD -d 10.181.4.103 -s 10.181.0.252 -j ACCEPT
 
 - compile django app
   https://github.com/pyinstaller/pyinstaller/wiki/Recipe-Executable-From-Django
+
+
+############################
+# 12. prometheus metrics
+############################
+12.0 Design
+- all metric write to textfile and collected by node_exporter
+  without setting up http server to export them
+
+12.1 How to add metrics
+  from prometheus_client import CollectorRegistry, Gauge, write_to_textfile, Counter
+  registry = CollectorRegistry()
+  login_event= Counter('login_event','login event',['user', 'result'], registry=registry)
+  login_event.labels(user="thomas", result="OK").inc()
+  write_to_textfile('/storage/config/metrics/<process_name>.prom', registry)
+
+12.2 How to make node_exporter to collect these metrics
+run node_export with below args:
+
+node_exporter
+-collector.textfile.directory=/storage/config/metrics/ -collectors.enabled="conntrack,diskstats,entropy,edac,filefd,filesystem,hwmon,infiniband,loadavg,mdadm,meminfo,netdev,netstat,sockstat,stat,textfile,time,uname,vmstat,wifi,zfs,supervisord"
+
+12.2 collect metrics of supervisor managed Daemon
+add below to /etc/supervisor/supervisord.conf
+
+[inet_http_server]
+port = 127.0.0.1:9001
+
 
 -------------------------------------
 incoming coding work

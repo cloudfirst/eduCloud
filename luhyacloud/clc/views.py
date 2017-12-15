@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User
 
-import json
+import json, os
 import random, pickle, pexpect, os, base64, shutil, time, datetime
 import logging
 import commands
@@ -26,8 +26,75 @@ from luhyaapi.adToolWrapper import *
 from sortedcontainers import SortedList
 import requests, memcache
 from django.utils.translation import ugettext as _
-
 logger = getclclogger()
+
+from prometheus_client import CollectorRegistry, Gauge, write_to_textfile, Counter
+registry = CollectorRegistry()
+
+metrics_dst_dir    = "/storage/config/metrics/"
+metrics_dst_file   = "clc-views.prom"
+
+login_event        = Counter('login_event',          'login event',              ['user', 'result'], registry=registry)
+logout_event       = Counter('logout_event',         'logout event',             ['user', 'result'], registry=registry)
+vm_stop_event      = Counter('vm_stop_event',        'vm stop event',            ['owner', 'source', 'phase', 'state', 'nc'],registry=registry)
+vm_run_event       = Counter('vm_run_event',         'vm run event',             ['owner',  'nc'],   registry=registry)
+#num_rols          = Gauge('num_of_roles',           'number of roles',                              registry=registry)
+num_users          = Gauge('num_of_users',           'number of users',                              registry=registry)
+num_cc             = Gauge('num_of_clusters',        'number of cloud clusters',                     registry=registry)
+num_nc             = Gauge('num_of_nodes',           'number of cloud nodes',    ['ccname'],         registry=registry)
+num_imags          = Gauge('num_of_images',          'number of images',         ['os'],             registry=registry)
+num_predefined_vms = Gauge('num_of_predefine_vms',   'number of predefined vms', ['os'],             registry=registry)
+# trace vm life cycle
+num_running_vms    = Gauge('num_of_running_vms',     'number of running vms',    ['os','imgid','owner'],    registry=registry)
+
+def _init_prometheus_metrics():
+    from prometheus_client.parser import text_string_to_metric_families
+    if not os.path.exists(metrics_dst_dir + metrics_dst_file):
+        return
+
+    text = open(metrics_dst_dir + metrics_dst_file, 'r').read()
+    for family in text_string_to_metric_families(text):
+        for sample in family.samples:
+            metric_name   = sample[0]
+            metric_labels = sample[1]
+            metric_value  = sample[2]
+            logger.error("prometheus: retrieve metric %s with value %d" % (metric_name, metric_value))
+            if metric_name == "login_event":
+                login_event.labels(user   = metric_labels["user"],
+                                   result = metric_labels["result"]
+                                   ).inc(metric_value)
+            elif metric_name == "logout_event":
+                logout_event.labels(user   = metric_labels["user"],
+                                    result = metric_labels["result"]
+                                    ).inc(metric_value)
+            elif metric_name == "vm_stop_event":
+                vm_stop_event.labels(owner = metric_labels["owner"],
+                                     source= metric_labels["source"],
+                                     phase = metric_labels["phase"],
+                                     state = metric_labels["state"],
+                                     nc    = metric_labels["nc"],
+                                    ).inc(metric_value)
+            elif metric_name == "vm_run_event":
+                vm_run_event.labels(owner = metric_labels["owner"],
+                                    nc    = metric_labels["nc"],
+                                   ).inc(metric_value)
+            elif metric_name == "num_of_users":
+                num_users.set(metric_value)
+            elif metric_name == "num_of_clusters":
+                num_cc.set(metric_value)
+            elif metric_name == "num_of_nodes":
+                num_nc.labels(ccname=metric_labels['ccname']).set(metric_value)
+            elif metric_name == "num_of_images":
+                num_imags.labels(os=metric_labels['os']).set(metric_value)
+            elif metric_name == "num_of_predefine_vms":
+                num_predefined_vms.labels(os=metric_labels['os']).set(metric_value)
+            elif metric_name == "num_of_running_vms":
+                num_running_vms.labels(os    = metric_labels['os'],
+                                       imgid = metric_labels['imgid'],
+                                       owner = metric_labels['owner']
+                                       ).set(metric_value)
+
+_init_prometheus_metrics()
 
 CC_DETAIL_TEMPLATE = \
 '<div class="col-lg-6">' + \
@@ -590,7 +657,7 @@ def findVMRunningResource(request, tid):
         sobjs = ecServers_auth.objects.filter(srole='cc', mac0=ccobj.mac0, role_value__contains=role_prefix)
         if sobjs.count() == 0:
             logger.error("sobjs.count == 0, ignore it by now. will recover in the future.")
-            # continue 
+            # continue
 
         if nc_def == 'any':
             ncs = ecServers.objects.filter(ccname=cc.ccname, role='nc')
@@ -763,11 +830,15 @@ def user_login(request):
         if not user.is_active:
             response['status'] = "FAILURE"
             response['reason'] = _("account is not activated.")
+            login_event.labels(user=username, result="FAILURE").inc()
+            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
             return HttpResponse(json.dumps(response), content_type='application/json')
 
         if isAdmin(user.username):
             response['status'] = "FAILURE"
             response['reason'] = _("Admin is NOT allowd to login")
+            login_event.labels(user=username, result="FAILURE").inc()
+            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
             return HttpResponse(json.dumps(response), content_type='application/json')
 
         login(request, user)
@@ -775,11 +846,15 @@ def user_login(request):
         response['url'] = "/portal/cloud-desktops"
         response['sid'] = request.session.session_key
         logger.error("user %s login operation OK" % username)
+        login_event.labels(user=username, result="SUCCESS").inc()
+        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
         return HttpResponse(json.dumps(response), content_type='application/json')
     else:
         # Return an 'invalid login' error message.
         response['status'] = "FAILURE"
         response['reason'] = _("account is invalid")
+        login_event.labels(user=username, result="FAILURE").inc()
+        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
         return HttpResponse(json.dumps(response), content_type='application/json')
 
 def admin_login(request):
@@ -791,21 +866,29 @@ def admin_login(request):
         if not user.is_active:
             response['status'] = "FAILURE"
             response['reason'] = _("account is not activated.")
+            login_event.labels(user=username, result="FAILURE").inc()
+            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
             return HttpResponse(json.dumps(response), content_type='application/json')
 
         if not isAdmin(user.username):
             response['status'] = "FAILURE"
             response['reason'] = _("Only Admin is allowd to login")
+            login_event.labels(user=username, result="FAILURE").inc()
+            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
             return HttpResponse(json.dumps(response), content_type='application/json')
 
         login(request, user)
         response['status'] = "SUCCESS"
         response['url'] = "/clc/images"
+        login_event.labels(user=username, result="SUCCESS").inc()
+        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
         return HttpResponse(json.dumps(response), content_type='application/json')
     else:
         # Return an 'invalid login' error message.
         response['status'] = "FAILURE"
         response['reason'] = _("account is invalid")
+        login_event.labels(user=username, result="FAILURE").inc()
+        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
         return HttpResponse(json.dumps(response), content_type='application/json')
 
 def user_logout(request):
@@ -862,6 +945,10 @@ def account_create(request):
         vdpara=json.dumps(_vdparar),
     )
     rec.save()
+
+    num_users.inc()
+    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+
     addUserPrvDataDir(request.POST['userid'])
 
     if _vdparar['vapp'] == 'yes':
@@ -930,10 +1017,13 @@ def account_create_batch(request):
         rec.save()
         addUserPrvDataDir(u)
 
+        num_users.inc()
+
         if _vdparar['vapp'] == 'yes':
             virtapp_addAccount2AD(u, password)
 
     response['Result'] = 'OK'
+    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
     return HttpResponse(json.dumps(response), content_type="application/json")
 
 def request_new_account(request):
@@ -2662,6 +2752,11 @@ def image_create_task_run(request, srcid, dstid, insid):
         rec.progress = 0
         rec.save()
 
+        imgobj = ecImages.objects.get(ecid=srcid)
+        num_running_vms.labels(owner=rec.user, imgid=srcid, os=imgobj.ostype).inc()
+        vm_run_event.labels(owner=rec.user, nc=rec.ncip).inc()
+        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+
         # now everything is ready, start to run instance
         if DAEMON_DEBUG == True:
             url = 'http://%s:8000/cc/api/1.0/image/create/task/run' % rec.ccip
@@ -2690,6 +2785,10 @@ def image_ndp_stop(request):
     logger.error("--- --- ---ndp/stop: image_ndp_stop %s " % insid)
     try:
         rec = ectaskTransaction.objects.get(insid=insid)
+        vm_stop_event.labels(owner=rec.user, source="auto", phase="editing", state="stopped", nc=rec.ncip).inc()
+        imgobj = ecImages.objects.get(ecid=rec.srcimgid)
+        num_running_vms.labels(owner=rec.user, os=imgobj.ostype, imgid=rec.srcimgid).dec(1)
+        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
         if rec.insid.find("TVD") == 0:
             r = delet_task_by_id(rec.tid)
             return HttpResponse(r.content, content_type="application/json")
@@ -3037,6 +3136,8 @@ def image_create_task_submit_success(request, srcid, dstid, insid):
                 size    = imgfile_size,
             )
             dstimgrec.save()
+            num_imags.labels(os=srcimgrec.ostype).inc()
+            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
             logger.error('create new image record: %s %s %s' % (dstid, srcimgrec.ostype, srcimgrec.img_usage))
 
             rec = ecImages_auth(
@@ -3110,7 +3211,7 @@ def image_add_vm(request, imgid):
     ua              = ecAccount.objects.get(userid=request.user)
     ua_role_value   = ecAuthPath.objects.get(ec_authpath_name = ua.ec_authpath_name)
     objs            = ecImages_auth.objects.filter(ecid=imgid, role_value=ua_role_value.ec_authpath_value )
-    
+
     if objs[0].create != True:
         context = {
             'pagetitle'     : _('Error Report'),
@@ -3942,6 +4043,7 @@ def autoFindNewAddImage():
                 ecid = local_image,
                 name = local_image,
                 size = imgfile_size,
+                ostype = "",
             )
             rec.save()
 
@@ -4454,6 +4556,11 @@ def delete_tasks(request):
     tid = request.POST['tid']
     logger.error("--- --- --- clc delete_tasks %s" % tid)
 
+    rec = ectaskTransaction.objects.get(tid=tid)
+    vm_stop_event.labels(owner=rec.user, source="manual", phase=rec.phase, state=rec.state, nc=rec.ncip).inc()
+    imgobj = ecImages.objects.get(ecid=rec.srcimgid)
+    num_running_vms.labels(owner=rec.user, os=imgobj.ostype, imgid=rec.srcimgid).dec(1)
+    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
     r = delet_task_by_id(tid)
 
     return HttpResponse(r.content, content_type="application/json")
@@ -4579,7 +4686,10 @@ def delete_vds(request):
     else:
         # delete vds_auth records
         ecVDS_auth.objects.filter(insid=request.POST['insid']).delete()
+        imgobj = ecImages.objects.get(ecid=vds_rec.imageid)
         vds_rec.delete()
+        num_predefined_vms.labels(os=imgobj.ostype).dec(1)
+        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
         response['Result'] = 'OK'
 
     retvalue = json.dumps(response)
@@ -4626,6 +4736,9 @@ def create_vds(request):
         )
         new_vm.save()
         logger.error("create new vds record --- OK")
+        imgobj = ecImages.objects.get(ecid=request.POST['imageid'])
+        num_predefined_vms.labels(os=imgobj.ostype).inc()
+        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
 
         # update ecVDS_auth table
         new_vm_auth = ecVDS_auth(
@@ -4755,6 +4868,9 @@ def create_vss(request):
         )
         new_vm.save()
         logger.error("create new vss record --- OK")
+        imgobj = ecImages.objects.get(ecid=request.POST['imageid'])
+        num_predefined_vms.labels(os=imgobj.ostype).inc()
+        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
 
         new_vm_auth = ecVSS_auth(
             insid   =   request.POST['insid'],
@@ -4860,6 +4976,7 @@ def list_images(request):
     response['Records'] = data
     response['Result'] = 'OK'
 
+
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
 
@@ -4883,6 +5000,9 @@ def delete_images(request):
                shutil.rmtree(dbpath)
 
         # delete image records
+        num_imags.labels(os=rec.ostype).dec(1)
+        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        logger.error("prometheus: decrease image number with os=%s" % rec.ostype)
         rec.delete()
         response['Result'] = 'OK'
 
@@ -4894,11 +5014,17 @@ def update_images(request):
 
     rec = ecImages.objects.get(id=request.POST['id'])
     rec.name = request.POST['name']
+    if rec.ostype == "":
+        num_imags.labels(os=request.POST['ostype']).inc()
+        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        logger.error("prometheus: increase image number with os=%s" % request.POST['ostype'])
     rec.ostype = request.POST['ostype']
     rec.img_usage = request.POST['usage']
     rec.hypervisor = request.POST['hypervisor']
     rec.description = request.POST['description']
     rec.save()
+
+
 
     if rec.img_usage == 'server':
         dstfile = '/storage/space/database/images/%s/database' % rec.ecid
@@ -4928,6 +5054,8 @@ def create_images(request):
         size = request.POST['size']
     )
     rec.save()
+    num_imags.labels(os=request.POST['ostype']).inc()
+    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
 
     jrec = {}
     jrec['id'] = rec.id
@@ -5041,6 +5169,9 @@ def delete_active_account(request):
     delUserPrvDataDir(ecu.userid)
     u.delete()
     ecu.delete()
+
+    num_users.dec(1)
+    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
 
     response['Result'] = 'OK'
 
@@ -5333,6 +5464,7 @@ def register_server(request):
         else:
             # new record
             add_new_server(request)
+
     elif request.POST['role'] == 'cc':
         recs = ecServers.objects.filter(role=request.POST['role'], ccname=request.POST['ccname'])
         if recs.count() > 0:
@@ -5347,6 +5479,9 @@ def register_server(request):
             # new record
             logger.error('------ add_new_server')
             add_new_server(request)
+            num_cc.inc()
+            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+
     elif request.POST['role'] == 'nc':
         recs = ecServers.objects.filter(role=request.POST['role'], mac0=request.POST['mac0'])
         if recs.count() > 0:
@@ -5359,6 +5494,8 @@ def register_server(request):
         else:
             # new record
             add_new_server(request)
+            num_nc.labels(ccname=request.POST['ccname']).inc()
+            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
 
     response = {}
     response['Result'] = 'OK'

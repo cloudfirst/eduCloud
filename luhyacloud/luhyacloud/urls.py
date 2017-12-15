@@ -6,7 +6,7 @@ import os
 admin.autodiscover()
 
 urlpatterns = patterns('',
-        url(r'^admin/',     include(admin.site.urls)),
+        #url(r'^admin/',     include(admin.site.urls)),
         url(r'^machine/cpu/util$',         views.machine_cpu_util,               name='machine_cpu_util'),
         url(r'^machine/net/util$',         views.machine_net_util,               name='machine_net_util'),
         url(r'^machine/mem/util$',         views.machine_mem_util,               name='machine_mem_util'),

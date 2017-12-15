@@ -15,7 +15,6 @@ from datetime import datetime
 
 from luhyaapi.educloudLog import *
 from luhyaapi.hostTools import *
-
 import time
 from business_rules.variables import *
 from business_rules.actions import *
@@ -25,6 +24,35 @@ from vmschedule_rule import *
 from aim_rule import *
 
 logger = getclclogger()
+
+from prometheus_client import CollectorRegistry, Gauge, write_to_textfile, Counter
+registry = CollectorRegistry()
+
+metrics_dst_dir    = "/storage/config/metrics/"
+metrics_dst_file   = "bizrule-views.prom"
+
+num_rules = Gauge('num_of_rules', 'number of rules', ['type'], registry=registry)
+
+def _init_prometheus_metrics():
+    num_rules.labels(type="postlogin").set(0)
+    num_rules.labels(type="schedule").set(0)
+    num_rules.labels(type="aim").set(0)
+
+    from prometheus_client.parser import text_string_to_metric_families
+    if not os.path.exists(metrics_dst_dir + metrics_dst_file):
+        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+    else:
+        text = open(metrics_dst_dir + metrics_dst_file, 'r').read()
+        for family in text_string_to_metric_families(text):
+            for sample in family.samples:
+                metric_name   = sample[0]
+                metric_labels = sample[1]
+                metric_value  = sample[2]
+                if metric_name == "num_of_rules":
+                    logger.error("prometheus: retrieve metric num_of_rules with value %d" % metric_value)
+                    num_rules.labels(type = metric_labels["type"]).set(metric_value)
+
+_init_prometheus_metrics()
 
 def get_all_images():
     image_list = []
@@ -60,11 +88,14 @@ def postlogin_rule_submit(request):
 
     # verify action params
     rules = json.loads(rule_array)
+    num_rules.labels(type="postlogin").set(0)
     for rule in rules:
+        num_rules.labels(type="postlogin").inc()
         actions = rule["actions"]
         flag, msg = postlogin_verify_action_params(actions)
         if not flag:
             break
+    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
 
     response = {}
     if flag:
@@ -136,11 +167,14 @@ def vm_schedule_rule_submit(request):
 
     # verify action params
     rules = json.loads(rule_array)
+    num_rules.labels(type="schedule").set(0)
     for rule in rules:
+        num_rules.labels(type="schedule").inc()
         actions = rule["actions"]
         flag, msg = vmschedule_verify_action_params(actions)
         if not flag:
             break
+    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
 
     response = {}
     if flag:
@@ -208,11 +242,14 @@ def vm_ip_rule_submit(request):
 
     # verify action params
     rules = json.loads(rule_array)
+    num_rules.labels(type="aim").set(0)
     for rule in rules:
+        num_rules.labels(type="aim").inc()
         actions = rule["actions"]
         flag, msg = aim_verify_action_params(actions)
         if not flag:
             break
+    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
 
     response = {}
     if flag:
@@ -252,5 +289,3 @@ def vm_ip_rule_run(request):
 
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
-
-
