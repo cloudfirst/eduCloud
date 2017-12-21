@@ -89,13 +89,16 @@ def postlogin_rule_submit(request):
     # verify action params
     rules = json.loads(rule_array)
     num_rules.labels(type="postlogin").set(0)
+    index = 0
     for rule in rules:
         num_rules.labels(type="postlogin").inc()
+        index = index + 1
         actions = rule["actions"]
         flag, msg = postlogin_verify_action_params(actions)
         if not flag:
             break
     write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+    logger.error("prometheus: Add %d postlogin rules" % index)
 
     response = {}
     if flag:
@@ -168,13 +171,16 @@ def vm_schedule_rule_submit(request):
     # verify action params
     rules = json.loads(rule_array)
     num_rules.labels(type="schedule").set(0)
+    index = 0
     for rule in rules:
         num_rules.labels(type="schedule").inc()
+        index = index + 1
         actions = rule["actions"]
         flag, msg = vmschedule_verify_action_params(actions)
         if not flag:
             break
     write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+    logger.error("prometheus: Add %d schedule rules" % index)
 
     response = {}
     if flag:
@@ -243,13 +249,16 @@ def vm_ip_rule_submit(request):
     # verify action params
     rules = json.loads(rule_array)
     num_rules.labels(type="aim").set(0)
+    index = 0
     for rule in rules:
         num_rules.labels(type="aim").inc()
+        index = index + 1
         actions = rule["actions"]
         flag, msg = aim_verify_action_params(actions)
         if not flag:
             break
     write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+    logger.error("prometheus: Add %d aim rules" % index)
 
     response = {}
     if flag:

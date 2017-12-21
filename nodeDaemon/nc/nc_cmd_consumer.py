@@ -5,13 +5,22 @@ from luhyaapi.rsyncWrapper import *
 from luhyaapi.vboxWrapper import *
 from luhyaapi.clcAPIWrapper import *
 from luhyaapi.zmqWrapper import *
-import pika, json, time, shutil, os, commands, zmq
+import pika, json, time, shutil, os, commands, zmq, threading
 import multiprocessing, pexpect, memcache
 
 logger = getncdaemonlogger()
 my_semaphores = multiprocessing.Semaphore(get_desktop_res()['max_pboot_vms'])
 my_pboot_delay = get_desktop_res()['max_pboot_delay']
 
+
+from prometheus_client import CollectorRegistry, Gauge, write_to_textfile, Counter
+registry = CollectorRegistry()
+
+metrics_dst_dir    = "/storage/config/metrics/"
+metrics_dst_file   = "nc.prom"
+
+vm_boot_time       = Gauge('vm_boot_time',           'time when vm boot',          ['os', 'imgid', 'insid', 'nc' ],    registry=registry)
+vm_running_time    = Gauge('vm_running_time',        'time when vm is running',    ['os', 'imgid', 'insid', 'nc' ],    registry=registry)
 #################################################
 #  worker thread
 
@@ -605,7 +614,7 @@ class SubmitImageTaskThread(multiprocessing.Process):
                 self.task_finished()
                 payload = json.dumps(payload)
                 self.forwardTaskStatus2CC(payload)
-                time.sleep(20)	
+                time.sleep(20)
                 logger.error('send cmd image/submit/success whith payload=%s' % payload)
                 self.download_rpc.call(cmd="image/submit/success", tid=data['tid'], paras=data['rsync'])
 
@@ -652,6 +661,20 @@ class runImageTaskThread(multiprocessing.Process):
             'errormsg'  : '',
             'failed'    : 0,
         }
+
+        vm_boot_time.labels(os     = self.runtime_option['ostype'],
+                            imgid  = self.runtime_option['imgid'],
+                            insid  = self.runtime_option['insid'],
+                            nc     = self.runtime_option['rdp_ip'],
+                            ).set_to_current_time()
+        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        logger.error("prometheus-vbox_createVM: %s.%s" % (os.getpid(), threading.current_thread().ident))
+        logger.error("prometheus-vbox_createVM: vm_boot_time{%s/%s/%s/%s} = %s" %
+        (self.runtime_option['ostype'],
+         self.runtime_option['imgid'],
+         self.runtime_option['insid'],
+         self.runtime_option['rdp_ip'],
+         time.asctime( time.localtime(time.time()))))
 
         vboxmgr = self.vboxmgr
         bridged_ifs = get_vm_ifs()
@@ -820,6 +843,20 @@ class runImageTaskThread(multiprocessing.Process):
                     ret = vboxmgr.ndp_runVM(self.runtime_option['rdp_ip'], self.runtime_option['rdp_port'])
                 else:
                     ret = vboxmgr.runVM(headless)
+
+                vm_running_time.labels(os     = self.runtime_option['ostype'],
+                                       imgid  = self.runtime_option['imgid'],
+                                       insid  = self.runtime_option['insid'],
+                                       nc     = self.runtime_option['rdp_ip'],
+                                      ).set_to_current_time()
+                write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+                logger.error("prometheus-vbox_runVM: %s.%s" % (os.getpid(), threading.current_thread().ident))
+                logger.error("prometheus-vbox_runVM: vm_running_time{%s/%s/%s/%s} = %s" %
+                (self.runtime_option['ostype'],
+                 self.runtime_option['imgid'],
+                 self.runtime_option['insid'],
+                 self.runtime_option['rdp_ip'],
+                 time.asctime( time.localtime(time.time()))))
 
                 logger.error("--- --- --- vboxmgr.runVM, error=%s" % ret)
             else:
