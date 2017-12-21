@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User
 
-import json, os, threading
+import json, os, threading, filelock
 import random, pickle, pexpect, os, base64, shutil, time, datetime
 import logging
 import commands
@@ -46,6 +46,11 @@ num_imags          = Gauge('num_of_images',          'number of images',        
 num_predefined_vms = Gauge('num_of_predefine_vms',   'number of predefined vms', ['os'],             registry=registry)
 # trace vm life cycle
 num_running_vms    = Gauge('num_of_running_vms',     'number of running vms',    ['os','imgid','owner'],    registry=registry)
+
+def write_metrics_wrapper(path):
+    lock = filelock.FileLock(path)
+    with lock:
+        write_to_textfile(path, registry)
 
 def _init_prometheus_metrics():
     logger.error("prometheus-_init_prometheus_metrics: %s.%s" % (os.getpid(), threading.current_thread().ident))
@@ -730,12 +735,12 @@ def findBuildResource(request, tid):
     else:
         filter = 'rvd'
         vm_res_matrix = get_desktop_res()
-        logger.error("origin resource request is %s" % json.dumps(vm_res_matrix))
+        logger.error("origin resource request is %s" % json.dumps(vm_res_matrix, indent=4))
         vmtypeobj = ecVMTypes.objects.get(name='vdsmall')
         vm_res_matrix['mem'] += vmtypeobj.memory
-        logger.error("rvd resource request is %s" % json.dumps(vm_res_matrix))
+        logger.error("rvd resource request is %s" % json.dumps(vm_res_matrix, indent=4))
 
-    logger.error('vm_res_matrix for %s is  %s' % (srcid, json.dumps(vm_res_matrix)))
+    logger.error('vm_res_matrix for %s is  %s' % (srcid, json.dumps(vm_res_matrix, indent=4)))
 
     scheduled = False
     if os.path.exists("/etc/educloud/modules/bizrule") == True:
@@ -832,7 +837,7 @@ def user_login(request):
             response['status'] = "FAILURE"
             response['reason'] = _("account is not activated.")
             login_event.labels(user=username, result="FAILURE").inc()
-            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+            write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
             logger.error("prometheus-user_login: login_event{%s/%s} increased by 1" % (username, "FAILURE"))
             logger.error("prometheus-user_login: %s/%s" % (os.getpid(), threading.current_thread().ident))
             return HttpResponse(json.dumps(response), content_type='application/json')
@@ -841,7 +846,7 @@ def user_login(request):
             response['status'] = "FAILURE"
             response['reason'] = _("Admin is NOT allowd to login")
             login_event.labels(user=username, result="FAILURE").inc()
-            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+            write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
             logger.error("prometheus-user_login: login_event{%s/%s} increased by 1" % (username, "FAILURE"))
             logger.error("prometheus-user_login: %s/%s" % (os.getpid(), threading.current_thread().ident))
             return HttpResponse(json.dumps(response), content_type='application/json')
@@ -851,7 +856,7 @@ def user_login(request):
         response['url'] = "/portal/cloud-desktops"
         response['sid'] = request.session.session_key
         login_event.labels(user=username, result="SUCCESS").inc()
-        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
         logger.error("prometheus-user_login: login_event{%s/%s} increased by 1" % (username, "SUCCESS"))
         logger.error("prometheus-user_login: %s/%s" % (os.getpid(), threading.current_thread().ident))
         return HttpResponse(json.dumps(response), content_type='application/json')
@@ -860,7 +865,7 @@ def user_login(request):
         response['status'] = "FAILURE"
         response['reason'] = _("account is invalid")
         login_event.labels(user=username, result="FAILURE").inc()
-        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
         logger.error("prometheus-user_login: login_event{%s/%s} increased by 1" % (username, "FAILURE"))
         logger.error("prometheus-user_login: %s/%s" % (os.getpid(), threading.current_thread().ident))
         return HttpResponse(json.dumps(response), content_type='application/json')
@@ -875,7 +880,7 @@ def admin_login(request):
             response['status'] = "FAILURE"
             response['reason'] = _("account is not activated.")
             login_event.labels(user=username, result="FAILURE").inc()
-            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+            write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
             logger.error("prometheus-user_login: login_event{%s/%s} increased by 1" % (username, "FAILURE"))
             logger.error("prometheus-user_login: %s/%s" % (os.getpid(), threading.current_thread().ident))
             return HttpResponse(json.dumps(response), content_type='application/json')
@@ -884,7 +889,7 @@ def admin_login(request):
             response['status'] = "FAILURE"
             response['reason'] = _("Only Admin is allowd to login")
             login_event.labels(user=username, result="FAILURE").inc()
-            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+            write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
             logger.error("prometheus-user_login: login_event{%s/%s} increased by 1" % (username, "FAILURE"))
             logger.error("prometheus-user_login: %s/%s" % (os.getpid(), threading.current_thread().ident))
             return HttpResponse(json.dumps(response), content_type='application/json')
@@ -893,7 +898,7 @@ def admin_login(request):
         response['status'] = "SUCCESS"
         response['url'] = "/clc/images"
         login_event.labels(user=username, result="SUCCESS").inc()
-        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
         logger.error("prometheus-user_login: login_event{%s/%s} increased by 1" % (username, "SUCCESS"))
         logger.error("prometheus-user_login: %s/%s" % (os.getpid(), threading.current_thread().ident))
         return HttpResponse(json.dumps(response), content_type='application/json')
@@ -902,7 +907,7 @@ def admin_login(request):
         response['status'] = "FAILURE"
         response['reason'] = _("account is invalid")
         login_event.labels(user=username, result="FAILURE").inc()
-        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
         logger.error("prometheus-user_login: login_event{%s/%s} increased by 1" % (username, "FAILURE"))
         logger.error("prometheus-user_login: %s/%s" % (os.getpid(), threading.current_thread().ident))
         return HttpResponse(json.dumps(response), content_type='application/json')
@@ -963,7 +968,7 @@ def account_create(request):
     rec.save()
 
     num_users.inc()
-    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+    write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
     logger.error("prometheus-account_create: num_users increased by 1")
     logger.error("prometheus-account_create: %s.%s" % (os.getpid(), threading.current_thread().ident))
 
@@ -1040,7 +1045,7 @@ def account_create_batch(request):
             virtapp_addAccount2AD(u, password)
 
     response['Result'] = 'OK'
-    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+    write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
     logger.error("prometheus-account_create_batch: num_users increased by %d" % len(user_list))
     logger.error("prometheus-account_create_batch: %s.%s" % (os.getpid(), threading.current_thread().ident))
 
@@ -2777,7 +2782,7 @@ def image_create_task_run(request, srcid, dstid, insid):
         imgobj = ecImages.objects.get(ecid=srcid)
         num_running_vms.labels(owner=rec.user, imgid=srcid, os=imgobj.ostype).inc()
         vm_run_event.labels(owner=rec.user, nc=rec.ncip).inc()
-        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
         logger.error("prometheus-image_create_task_run: vm_run_event{%s/%s} increased by 1" % (rec.user, rec.ncip))
         logger.error("prometheus-image_create_task_run: num_running_vms{%s/%s/%s} increased by 1" % (rec.user, srcid, imgobj.ostype))
         logger.error("prometheus-image_create_task_run: %s.%s" % (os.getpid(), threading.current_thread().ident))
@@ -2792,6 +2797,7 @@ def image_create_task_run(request, srcid, dstid, insid):
             'ncip' :            rec.ncip,
             'runtime_option' :  rec.runtime_option,
         }
+        logger.error("image_create_task_run: semd post request with runtime_option as %s" %  json.dumps(json.loads(rec.runtime_option), indent=4))
         r = requests.post(url, data=payload)
         logger.error("--- --- --- " + url + ":" + r.content)
 
@@ -2813,7 +2819,7 @@ def image_ndp_stop(request):
         vm_stop_event.labels(owner=rec.user, source="auto", phase="editing", state="stopped", nc=rec.ncip).inc()
         imgobj = ecImages.objects.get(ecid=rec.srcimgid)
         num_running_vms.labels(owner=rec.user, os=imgobj.ostype, imgid=rec.srcimgid).dec(1)
-        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
         logger.error("prometheus-image_ndp_stop: vm_stop_event{%s/%s/%s/%s/%s} increased by 1" % (rec.user, "auto", "editing", "stopped", rec.ncip))
         logger.error("prometheus-image_ndp_stop: num_running_vms{%s/%s/%s} decreased by 1"  % (rec.user, imgobj.ostype, rec.srcimgid))
         logger.error("prometheus-image_ndp_stop: %s.%s" % (os.getpid(), threading.current_thread().ident))
@@ -3165,7 +3171,7 @@ def image_create_task_submit_success(request, srcid, dstid, insid):
             )
             dstimgrec.save()
             num_imags.labels(os=srcimgrec.ostype).inc()
-            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+            write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
             logger.error('prometheus-image_create_task_submit_success: num_imags{%s/%s} increased by 1' % (dstid, srcimgrec.ostype))
             logger.error("prometheus-image_create_task_submit_success: %s.%s" % (os.getpid(), threading.current_thread().ident))
 
@@ -4589,7 +4595,7 @@ def delete_tasks(request):
     vm_stop_event.labels(owner=rec.user, source="manual", phase=rec.phase, state=rec.state, nc=rec.ncip).inc()
     imgobj = ecImages.objects.get(ecid=rec.srcimgid)
     num_running_vms.labels(owner=rec.user, os=imgobj.ostype, imgid=rec.srcimgid).dec(1)
-    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+    write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
     logger.error("prometheus-delete_tasks: vm_stop_event{%s/%s/%s/%s/%s} increased by 1" % (rec.user, "manual", rec.phase, rec.state, rec.ncip ))
     logger.error("prometheus-delete_tasks: num_running_vms{%s/%s/%s} decreased by 1"  % (rec.user, imgobj.ostype, rec.srcimgid))
     logger.error("prometheus-delete_tasks: %s.%s" % (os.getpid(), threading.current_thread().ident))
@@ -4722,7 +4728,7 @@ def delete_vds(request):
         imgobj = ecImages.objects.get(ecid=vds_rec.imageid)
         vds_rec.delete()
         num_predefined_vms.labels(os=imgobj.ostype).dec(1)
-        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
         logger.error("prometheus-delete_vds: num_predefined_vms{%s/%s} decreased by 1" % (imgobj.ostype, vds_rec.insid))
         logger.error("prometheus-delete_vds: %s.%s" % (os.getpid(), threading.current_thread().ident))
         response['Result'] = 'OK'
@@ -4773,7 +4779,7 @@ def create_vds(request):
         logger.error("create new vds record --- OK")
         imgobj = ecImages.objects.get(ecid=request.POST['imageid'])
         num_predefined_vms.labels(os=imgobj.ostype).inc()
-        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
         logger.error("prometheus-create_vds: num_predefined_vms{%s/%s} increased by 1" % (request.POST['insid'], imgobj.ostype))
         logger.error("prometheus-create_vds: %s.%s" % (os.getpid(), threading.current_thread().ident))
 
@@ -4907,7 +4913,7 @@ def create_vss(request):
         logger.error("create new vss record --- OK")
         imgobj = ecImages.objects.get(ecid=request.POST['imageid'])
         num_predefined_vms.labels(os=imgobj.ostype).inc()
-        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
 
         new_vm_auth = ecVSS_auth(
             insid   =   request.POST['insid'],
@@ -5038,7 +5044,7 @@ def delete_images(request):
 
         # delete image records
         num_imags.labels(os=rec.ostype).dec(1)
-        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
         logger.error("prometheus-delete_images: num_imags{%s/%s} decreased by 1" % (rec.ecid, rec.ostype))
         logger.error("prometheus-delete_images: %s.%s" % (os.getpid(), threading.current_thread().ident))
         rec.delete()
@@ -5054,7 +5060,7 @@ def update_images(request):
     rec.name = request.POST['name']
     if rec.ostype == "":
         num_imags.labels(os=request.POST['ostype']).inc()
-        write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+        write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
         logger.error("prometheus-update_images: num_imags{%s/%s} increased by 1" % (rec.ecid, request.POST['ostype']))
         logger.error("prometheus-update_images: %s.%s" % (os.getpid(), threading.current_thread().ident))
     rec.ostype = request.POST['ostype']
@@ -5094,7 +5100,7 @@ def create_images(request):
     )
     rec.save()
     num_imags.labels(os=request.POST['ostype']).inc()
-    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+    write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
     logger.error("prometheus-create_images num_imags{%s/%s} increased by 1" % (request.POST['ecid'], request.POST['ostype']))
     logger.error("prometheus-create_images: %s.%s" % (os.getpid(), threading.current_thread().ident))
 
@@ -5212,7 +5218,7 @@ def delete_active_account(request):
     ecu.delete()
 
     num_users.dec(1)
-    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+    write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
     logger.error("prometheus-delete_active_account: num_users decreased by 1")
     logger.error("prometheus-delete_active_account: %s.%s" % (os.getpid(), threading.current_thread().ident))
 
@@ -5523,7 +5529,7 @@ def register_server(request):
             logger.error('------ add_new_server')
             add_new_server(request)
             num_cc.inc()
-            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+            write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
 
     elif request.POST['role'] == 'nc':
         recs = ecServers.objects.filter(role=request.POST['role'], mac0=request.POST['mac0'])
@@ -5538,7 +5544,7 @@ def register_server(request):
             # new record
             add_new_server(request)
             num_nc.labels(ccname=request.POST['ccname']).inc()
-            write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+            write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
 
     response = {}
     response['Result'] = 'OK'
@@ -6134,7 +6140,7 @@ def list_myvds(request):
     response = {}
     response['Result'] = 'OK'
     response['data'] = vds
-    logger.error("user %s own virtual desktop as below: %s" %(_user, vds))
+    logger.error("user %s own virtual desktop as below: %s" % (_user, json.dumps(vds, indent=4)))
 
     if len(ua.vdpara) > 0:
         para = json.loads(ua.vdpara)
@@ -6345,7 +6351,7 @@ def rvd_stop(request, srcid, dstid, insid):
     vm_stop_event.labels(owner=rec.user, source="manual", phase=rec.phase, state=rec.state, nc=rec.ncip).inc()
     imgobj = ecImages.objects.get(ecid=rec.srcimgid)
     num_running_vms.labels(owner=rec.user, os=imgobj.ostype, imgid=rec.srcimgid).dec(1)
-    write_to_textfile(metrics_dst_dir + metrics_dst_file, registry)
+    write_metrics_wrapper(metrics_dst_dir + metrics_dst_file)
     logger.error("prometheus-rvd_stop: vm_stop_event{%s/%s/%s/%s/%s} increased by 1" % (rec.user, "manual", rec.phase, rec.state, rec.ncip))
     logger.error("prometheus-rvd_stop: num_running_vms{%s/%s/%s} decreased by 1"  % (rec.user, imgobj.ostype, rec.srcimgid))
     logger.error("prometheus-rvd_stop: %s.%s" % (os.getpid(), threading.current_thread().ident))

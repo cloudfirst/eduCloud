@@ -34,7 +34,7 @@ class nc_statusPublisher():
 
     def job30seconds(self):
         logger.error("start job30seconds")
-        
+
         avail_vm_lsit = getVMlist()
         for avm in avail_vm_lsit:
             if avm['state'] == 'Running':
@@ -84,7 +84,7 @@ class nc_statusPublisher():
             logger.error('getServiceStatus exception = %s' % str(e))
         try:
             payload['hardware_data']    = getHostHardware()
-            logger.error("nc_statusPublisher-hardware data %s" % json.dumps(payload['hardware_data']))
+            logger.error("nc_statusPublisher-hardware data %s" % json.dumps(payload['hardware_data'], indent=4))
         except Exception as e:
             logger.error('getHostHardware exception = %s' % str(e))
         try:

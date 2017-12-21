@@ -40,7 +40,7 @@ class prepareImageTaskThread(multiprocessing.Process):
     def checkCLCandCCFile(self, paras):
         logger.error("Enter checkCLCandCCFile() ... ... ")
         result = verify_clc_cc_image_info(self.ccip, self.tid)
-        logger.error("clc vs cc image info = %s" % json.dumps(result))
+        logger.error("clc vs cc image info = %s" % json.dumps(result, indent=4))
 
         if paras == 'luhya':
             if result['clc']['version'] == result['cc']['version'] and \
@@ -641,6 +641,7 @@ class runImageTaskThread(multiprocessing.Process):
         self.dstimgid = retval[1]
         self.insid    = retval[2]
         self.runtime_option = json.loads(runtime_option)
+        logger.error("runImageTaskThread: tid=%s with runtime_options as %s" % (self.tid, json.dumps(self.runtime_option, indent=4)))
 
         self.rpcClient = RpcClient(logger, self.ccip)
 
@@ -759,7 +760,7 @@ class runImageTaskThread(multiprocessing.Process):
                     payload['errormsg'] = str(e)
 
         simple_send(logger, self.ccip, 'cc_status_queue', json.dumps(payload))
-        logger.error('createvm result: %s' % json.dumps(payload))
+        logger.error('createvm result: %s' % json.dumps(payload, indent=4))
         return flag
 
 
@@ -871,7 +872,7 @@ class runImageTaskThread(multiprocessing.Process):
             process_delete_cmd(self.tid, self.runtime_option)
 
         simple_send(logger, self.ccip, 'cc_status_queue', json.dumps(payload))
-        logger.error('runvm result: %s' % json.dumps(payload))
+        logger.error('runvm result: %s' % json.dumps(payload, indent=4))
         logger.error("--- --- --- exit vbox_runVM")
         return flag
 
@@ -951,7 +952,7 @@ def update_nc_running_status(external=None):
 
     ccip = getccipbyconf()
     simple_send(logger, ccip, 'cc_status_queue', json.dumps(payload))
-    logger.error("update_nc_running_status hardware data %s" % json.dumps(payload['hardware_data']))
+    logger.error("update_nc_running_status hardware data %s" % json.dumps(payload['hardware_data'], indent=4))
 
 def process_stop_cmd(tid, runtime_option):
     retval   = tid.split(':')
@@ -1121,7 +1122,7 @@ class nc_cmdConsumer():
             if message.has_key('op') and message['op'] in  nc_cmd_handlers and nc_cmd_handlers[message['op']] != None:
                 nc_cmd_handlers[message['op']](message['tid'], message['runtime_option'])
             else:
-                logger.error("zmq: nc get unknown cmd : %s", body)
+                logger.error("zmq: nc get unknown cmd")
         except Exception as e:
             logger.error("zmq: exception =  %s" % str(e))
 
