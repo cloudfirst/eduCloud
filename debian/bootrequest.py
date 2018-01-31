@@ -47,49 +47,55 @@ def checkCLCAvailable(clcip):
 if not os.path.exists(fileflag):
     luhya_debug_logger.error('done.txt NOT exist, start request ... ...')
     ip = sys.argv[1]
-    luhya_debug_logger.error('11111')
     clc_ip = "%s" % ip
-    luhya_debug_logger.error('22222')
     # check clc available
     while True:
-        luhya_debug_logger.error('33333')
         if checkCLCAvailable(clc_ip) == True:
             break
         else:
-            luhya_debug_logger.error('44444')
-            time.sleep(1)
+            luhya_debug_logger.error("wait 3 seconds and try again ... ...")
+            time.sleep(3)
 
     # send request to clc
-    luhya_debug_logger.error('55555')
     clc_request_url = "http://%s/clc/api/1.0/vm/afterboot" % clc_ip
-    luhya_debug_logger.error('66666')
     macaddrs = getMacAddressbyIndex()
     for mac in macaddrs:
         payload = {
             'mac' : mac.lower()
         }
-        luhya_debug_logger.error('send request to clc with mac=%s' % mac.lower())
-        r = requests.post(clc_request_url, data=payload)
-        res = json.loads(r.content)
-        if res["Result"] == "OK":
-            luhya_debug_logger.error('request Result SUCCESS')
-            with open(fileflag, 'w') as myfile:
-                myfile.write("already done!")
-                luhya_debug_logger.error('generate done.txt')
+        while True:
+            time.sleep(1)
+            luhya_debug_logger.error('send request to clc with mac=%s' % mac.lower())
+            try:
+                r = requests.post(clc_request_url, data=payload)
+                if r.status_code == 200:
+                    res = json.loads(r.content)
+                    if res['find_mac'] == 'no':
+                        luhya_debug_logger.error("mac %s NOT find" % mac.lower())
+                    elif res['isnat'] == 'yes':
+                        luhya_debug_logger.error("mac %s is NAT" % mac.lower())
+                    else:
+                        filepath = '%s\\%s' % (os.environ['TMP'], res['filename'])
+                        import codecs
+                        with codecs.open(filepath, 'w', 'utf-8') as myfile:
+                            myfile.writelines(res['content'])
+                            luhya_debug_logger.error('generate %s' % res['filename'])
 
-            filepath = '%s\\%s' % (os.environ['TMP'], res['filename'])
-            with open(filepath, 'w') as myfile:
-                myfile.writelines(res['content'])
-                luhya_debug_logger.error('generate %s' % res['filename'])
+                        sys.path.append(os.environ['TMP'])
+                        mn = res['filename'].split('.')[0]
+                        with open(fileflag, 'w') as myfile:
+                            myfile.write("already done!")
+                            luhya_debug_logger.error('generate done.txt')
 
-            sys.path.append(os.environ['TMP'])
-            mn = res['filename'].split('.')[0]
-            luhya_debug_logger.error('run %s' % res['filename'])
-            hc = __import__(mn)
-            hc.changeHost(luhya_debug_logger)
-            break
-        else:
-            luhya_debug_logger.error('request Result FAIL')
+                        luhya_debug_logger.error('run %s' % res['filename'])
+                        hc = __import__(mn)
+                        hc.changeHost(luhya_debug_logger)
+                    break
+                else:
+                    luhya_debug_logger.error('request status code is NOT 200, try again ... ...')
+            except Exception as e:
+                luhya_debug_logger.error('request with exception %s, try again ... ...' % str(e))
+
 else:
     luhya_debug_logger.error('done.txt ALREADY exist, skip request.')
 

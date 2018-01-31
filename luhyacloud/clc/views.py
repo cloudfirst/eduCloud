@@ -6234,39 +6234,48 @@ def vm_afterboot(request):
 
     response = {}
     if not bfind:
-        response["Result"] = "FAIL"
+        response["find_mac"] = "no"
+        logger.error("vm_afterboot -- mac %s not find" % mac)
     else:
+        response["find_mac"] = "yes"
+        logger.error("vm_afterboot -- mac %s find" % mac)
         if netcard["nic_mode"]  == "nat":
-            response["Result"] = "FAIL"
-        elif netcard["nic_mode"] == "bridge":
-            response["Result"] = "OK"
-            vmfile = 'afterboot.py'
-            filepath = '/usr/local/webconfig/%s' % vmfile
-            #filepath = '/storage/config/%s' % vmfile
-            with open(filepath, 'r') as myfile:
-                mycontent = myfile.readlines()
+            response["isnat"] = "yes"
+            logger.error("vm_afterboot -- mac %s is NAT" % mac)
+        else:
+            response["isnat"] = "no"
+            logger.error("vm_afterboot -- mac %s is bridge" % mac)
+            try:
+                vmfile = 'afterboot.py'
+                filepath = '/usr/local/webconfig/%s' % vmfile
+                #filepath = '/storage/config/%s' % vmfile
+                import codecs
+                with codecs.open(filepath, 'r', 'utf-8') as myfile:
+                    mycontent = myfile.readlines()
 
-            myscript = ""
-            for line in mycontent:
-                myscript += line
+                myscript = ""
+                for line in mycontent:
+                    myscript += line
 
-            # set hostname
-            myscript = myscript.replace("NAMEFLAG", "yes")
-            hostname_tail = "%4x" % random.randint(0x0, 0xFFFF)
-            myscript = myscript.replace("new-host-name", runtime_option["user"] + "-" + hostname_tail.strip())
+                # set hostname
+                myscript = myscript.replace("NAMEFLAG", "yes")
+                hostname_tail = "%4x" % random.randint(0x0, 0xFFFF)
+                myscript = myscript.replace("new-host-name", runtime_option["user"] + "-" + hostname_tail.strip())
 
-            # set ip/mask/gateway
-            myscript = myscript.replace("IPFLAG", "yes")
-            myscript = myscript.replace("new-host-ipaddr",    netcard["nic_ip"])
-            logger.error('vm_afterboot -- new ip  = %s' % netcard["nic_ip"])
-            myscript = myscript.replace("new-host-ipmask",    netcard["nic_mask"])
-            myscript = myscript.replace("new-host-ipgateway", netcard["nic_gateway"])
-            myscript = myscript.replace("new-host-dns",       netcard["nic_dns"])
-            myscript = myscript.replace("new-host-mac",       mac)
-            myscript = myscript.replace("BOOTFLAG",           netcard["nic_reboot"])
+                # set ip/mask/gateway
+                myscript = myscript.replace("IPFLAG", "yes")
+                myscript = myscript.replace("new-host-ipaddr",    netcard["nic_ip"])
+                logger.error('vm_afterboot -- new ip  = %s' % netcard["nic_ip"])
+                myscript = myscript.replace("new-host-ipmask",    netcard["nic_mask"])
+                myscript = myscript.replace("new-host-ipgateway", netcard["nic_gateway"])
+                myscript = myscript.replace("new-host-dns",       netcard["nic_dns"])
+                myscript = myscript.replace("new-host-mac",       mac)
+                myscript = myscript.replace("BOOTFLAG",           netcard["nic_reboot"])
 
-            response['filename'] = vmfile
-            response['content']  = myscript
+                response['filename'] = vmfile
+                response['content']  = myscript
+            except Exception as e:
+                logger.error('vm_afterboot -- exception = %s' % str(e))
 
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
