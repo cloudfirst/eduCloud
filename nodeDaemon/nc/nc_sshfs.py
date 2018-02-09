@@ -4,6 +4,19 @@ from luhyaapi.educloudLog import *
 
 logger = getsshfslogger()
 
+def runsshfs():
+    ccip = getccipbyconf()
+    base_cmd = 'sshfs -o cache=yes,reconnect luhya@%s:/storage/space /storage/space'
+
+    if not os.path.ismount('/storage/space'):
+        logger.error("/storage/space is NOT mounted.")
+        os.system("fusermount -u /storage/space")
+        cmd = base_cmd % (ccip)
+        logger.error("run cmd=%s" % cmd)
+        os.system(cmd)
+    else:
+        logger.error("/storage/space is mounted.")
+
 def runsshfswithexpect():
     ccip = getccipbyconf()
     password = "luhya"
@@ -49,7 +62,10 @@ def perform_mount():
         logger.error("I am nc and cc, no mount any more.")
         return
 
-    runsshfswithexpect()
+    if os.path.exists('/home/luhya/.ssh/id_rsa'):
+        runsshfs()
+    else:
+        runsshfswithexpect()
 
 class nc_sshfs():
     def __init__(self, ):
