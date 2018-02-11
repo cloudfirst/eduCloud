@@ -28,6 +28,7 @@ clean:
 	rm -fr $(EDU_CORE) $(EDU_WEBBASE) $(WEB_PORTAL) $(WEB_CLC) $(WEB_WALRUS) $(WEB_CC) $(WEB_VIRTAPP) $(WEB_BIZRULE)
 	rm -fr $(DAEMON_CLC) $(DAEMON_WALRUS) $(DAEMON_CC) $(DAEMON_NC) $(DAEMON_EXPORTER)
 	rm debian/*.debhelper.log debian/*.substvars  debian/files debian/stamp* debian/compat
+	find ./nodedaemon -name *.spec -delete
 install:
 	####################
 	#     LUHYA API    #
