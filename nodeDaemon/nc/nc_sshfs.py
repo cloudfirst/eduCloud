@@ -6,7 +6,7 @@ logger = getsshfslogger()
 
 def runsshfs():
     ccip = getccipbyconf()
-    base_cmd = 'sshfs -o cache=yes,reconnect luhya@%s:/storage/space /storage/space'
+    base_cmd = 'sshfs -o allow_other,umask=000,cache=yes,reconnect luhya@%s:/storage/space /storage/space'
 
     if not os.path.ismount('/storage/space'):
         logger.error("/storage/space is NOT mounted.")

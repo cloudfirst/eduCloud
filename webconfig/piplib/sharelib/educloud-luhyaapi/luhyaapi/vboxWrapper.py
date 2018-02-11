@@ -523,4 +523,5 @@ def getNotRunningVMs(insids):
                 logger.error("%s is NOT running. " % insid)
                 not_running_vms.append(insid)
 
+    logger.error("NotRunningVMs=%s" % not_running_vms) 
     return not_running_vms

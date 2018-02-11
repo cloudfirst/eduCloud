@@ -1,6 +1,9 @@
 #!/bin/bash -e
 
 if [ "$1" = "configure" ]; then
+
+    cp /usr/local/webconfig/fuse.conf   /etc/
+
     chown -R luhya:luhya /usr/local/nodedaemon || true
     chmod -R 777 /usr/local/nodedaemon || true
 
