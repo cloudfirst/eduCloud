@@ -1090,10 +1090,13 @@ class nc_cmdConsumer():
 
 
     def handle_reboot_and_poweroff(self):
+        runtime_option = {}
+        runtime_option["ccip"] = getccipbyconf()
+        runtime_option["ncip"] = getHostNetInfo()['ip0']
         vms = os.listdir('/storage/VMs/')
         vms = getNotRunningVMs(vms)
         for insid in vms:
-            nc_ndp_stop_handle(insid, " ")
+            nc_ndp_stop_handle(insid, runtime_option)
 
     def run(self):
         self.handle_reboot_and_poweroff()
@@ -1101,8 +1104,6 @@ class nc_cmdConsumer():
             msg = self.socket.recv()
             self.socket.send('OK')
             self.cmdHandle(msg)
-
-
 
 def main():
     consumer = nc_cmdConsumer()

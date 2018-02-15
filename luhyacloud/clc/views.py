@@ -590,7 +590,7 @@ def findVMRunningResource(request, tid):
         sobjs = ecServers_auth.objects.filter(srole='cc', mac0=ccobj.mac0, role_value__contains=role_prefix)
         if sobjs.count() == 0:
             logger.error("sobjs.count == 0, ignore it by now. will recover in the future.")
-            # continue 
+            # continue
 
         if nc_def == 'any':
             ncs = ecServers.objects.filter(ccname=cc.ccname, role='nc')
@@ -2585,15 +2585,13 @@ def getVM_WebURL(request, taskid):
     return web_url
 
 def image_create_task_prepare(request, srcid, dstid, insid):
-    logger.error("--- --- --- prepare_image_create_task")
-
     _tid = "%s:%s:%s" % (srcid, dstid, insid)
-
     rec = ectaskTransaction.objects.get(tid=_tid)
     rec.phase = "preparing"
     rec.state = "downloading"
     rec.progress = 0
     rec.save()
+    logger.error("clc image_create_task_prepare step 1 - change state to preparing/downloading")
 
     # # send request to CC to work
     if DAEMON_DEBUG == True:
@@ -2606,8 +2604,8 @@ def image_create_task_prepare(request, srcid, dstid, insid):
         'ncip' :            rec.ncip,
         'runtime_option' :  rec.runtime_option,
     }
+    logger.error("clc image_create_task_prepare step 2 - call cc to prepare")
     r = requests.post(url, data=payload)
-    logger.error("--- --- --- " + url + ":" + r.content)
 
     return HttpResponse(r.content, content_type="application/json")
 
@@ -2703,6 +2701,28 @@ def image_ndp_stop(request):
 
     except Exception as e:
         logger.error('---ndp/stop: image_ndp_stop error = %s ' % str(e))
+        runtime_option = request.POST['runtime_opton']
+
+        if insid.find("TVD") == 0 or insid.find('VD') == 0:
+            operation = "delete"
+        if insid.find('PVD') == 0 or insid.find('VS') == 0:
+            operation = "stop"
+
+        # # send request to CC to work
+        if DAEMON_DEBUG == True:
+            url = 'http://%s:8000/cc/api/1.0/task/%s' % (runtime_option['ccip'], operation)
+        else:
+            url = 'http://%s/cc/api/1.0/task/%s' % (runtime_option['ccip'], operation)
+
+        payload = {
+            'tid': "%s:%s:%s" % (insid, insid, insid),
+            'ncip': runtime_option['ncip'],
+            'runtime_option': runtime_option,
+        }
+
+        logger.error('---ndp/stop: send %s request to cc=%s nc=%s' % (operation, runtime_option['ccip'], runtime_option['ncip']))
+        r = requests.post(url, data=payload)
+
         response = {}
         response['Result'] = 'OK'
         retvalue = json.dumps(response)
@@ -3110,7 +3130,7 @@ def image_add_vm(request, imgid):
     ua              = ecAccount.objects.get(userid=request.user)
     ua_role_value   = ecAuthPath.objects.get(ec_authpath_name = ua.ec_authpath_name)
     objs            = ecImages_auth.objects.filter(ecid=imgid, role_value=ua_role_value.ec_authpath_value )
-    
+
     if objs[0].create != True:
         context = {
             'pagetitle'     : _('Error Report'),
@@ -6006,6 +6026,7 @@ def rvd_start(request, srcid, dstid, insid):
     response = {}
 
     _tid  = '%s:%s:%s' % (srcid, dstid, insid)
+    logger.error("rvd_start step:1 create tid=%s" % _tid)
 
     # if tid exist, just call view
     # else find resource and create tid
@@ -6014,16 +6035,20 @@ def rvd_start(request, srcid, dstid, insid):
         response['Result'] = 'OK'
         response['tid']  = _tid
         retvalue = json.dumps(response)
+        logger.error("rvd_start step:2 find trascation")
         return HttpResponse(retvalue, content_type="application/json")
     else:
+        logger.error("rvd_start step:2 Not find trascation, search resource ... ...")
         _ccip, _ncip, _msg = findVMRunningResource(request, _tid)
 
         if _ncip == None:
             response['Result'] = 'FAIL'
             response['error']  = _msg
             retvalue = json.dumps(response)
+            logger.error("rvd_start step:3 search resource failed = %s" % _msg)
             return HttpResponse(retvalue, content_type="application/json")
         else:
+            logger.error("rvd_start step:3 search resource success ccip=%s, ncip=" % (_ccip, _ncip))
             rec = ectaskTransaction(
                  tid         = _tid,
                  srcimgid    = srcid,
@@ -6039,12 +6064,14 @@ def rvd_start(request, srcid, dstid, insid):
             rec.save()
             runtime_option, error = genRuntimeOptionForImageBuild(_tid)
             if runtime_option == None:
+                logger.error("rvd_start step:4 generate runtime option failed")
                 rec.delete()
                 response['Result'] = 'FAIL'
                 response['error']  = error
                 retvalue = json.dumps(response)
                 return HttpResponse(retvalue, content_type="application/json")
             else:
+                logger.error("rvd_start step:4 generate runtime option succeed")
                 rec.runtime_option = json.dumps(runtime_option)
                 rec.save()
 
@@ -6074,11 +6101,12 @@ def rvd_create(request, srcid):
     _instanceid      = 'TVD' + genHexRandom()
     _tid             = '%s:%s:%s' % (_srcimgid, _dstimageid, _instanceid )
 
-    logger.error("--- --- --- rvd_create %s" % _tid)
+    logger.error("rvd_create step:1 create tid=%s" % _tid)
 
     _ccip, _ncip, _msg = findBuildResource(request, _tid)
     if _ncip == None:
         # not find proper cc,nc for build image
+        logger.error("rvd_create step:2 search resource failed = %s" % _msg)
         response['Result'] = 'FAIL'
         response['error']  = _msg
         retvalue = json.dumps(response)
@@ -6090,6 +6118,7 @@ def rvd_create(request, srcid):
         else:
             _user_name = request.user.username
 
+        logger.error("rvd_create step:2 search resource succeed ccip=%s, ncip=%s" % (_ccip, _ncip))
         rec = ectaskTransaction(
              tid         = _tid,
              srcimgid    = _srcimgid,
@@ -6105,12 +6134,14 @@ def rvd_create(request, srcid):
         rec.save()
         runtime_option, error = genRuntimeOptionForImageBuild(_tid)
         if runtime_option == None:
-                rec.delete()
-                response['Result'] = 'FAIL'
-                response['error']  = error
-                retvalue = json.dumps(response)
-                return HttpResponse(retvalue, content_type="application/json")
+            logger.error("rvd_create step:3 generate runtime option failed")
+            rec.delete()
+            response['Result'] = 'FAIL'
+            response['error']  = error
+            retvalue = json.dumps(response)
+            return HttpResponse(retvalue, content_type="application/json")
         else:
+            logger.error("rvd_create step:3 generate runtime option succeed")
             rec.runtime_option = json.dumps(runtime_option)
             rec.save()
 

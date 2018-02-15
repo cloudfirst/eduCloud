@@ -24,7 +24,7 @@ startVD
                --- findBuildResource()                                                                                                                                   VD:    stop_task(tid)  "/clc/api/1.0/rvd/stop/"
                --- gen Runtime option                                                                                                                                    server:rvd_stop()/image_create_task_stop()
                --- create Transaction record
----tid="x"  => client:start_tvd("/clc/api/1.0/rvd/s/d/i")     => client:prepare_tvd("/clc/api/1.0/rvd/prepare/s/d/i") => client:run_tvd("/clc/api/1.0/rvd/run/s/di") => client:stop_tvd()
+---tid="x"  => client:start_tvd("/clc/api/1.0/rvd/start/s/d/i")     => client:prepare_tvd("/clc/api/1.0/rvd/prepare/s/d/i") => client:run_tvd("/clc/api/1.0/rvd/run/s/di") => client:stop_tvd()
                server:rvd_start()                                server:rvd_prepare()
                 --- findVMRunningResource                        --- image_create_task_prepare()
                 --- update Transaction phase/state, ccip/ncip
@@ -42,6 +42,79 @@ runVM()     -- "/clc/image/create/task/run/srcid/dstid/insid"       image_create
 stopVM()    -- "/clc/image/create/task/stop/srcid/dstid/insid"      image_create_task_stop()
                                                                     --- update phase/state
                                                                     --- call cc/api/1.0/image/create/task/stop
+
+VM启动关闭消息流分析
+启动：
+1. client http request 到 clc 的rvd_create()或者rvd_start(),查找可用资源
+2. client http request 到 clc 的rvd_prepare()->image_create_task_prepare()
+   clc http request 到 cc 的 image_create_task_prepare()
+   cc 发送 zmq 消息 image/prepare 到 nc 的 nc_image_prepare_handle()  # nc_cmd_consumer 一直循环等待zmq消息
+   nc 启动 prepareImageTaskThread 进程
+      image  downloadFromWalrus2CC()
+             downloadFromCC2NC()
+             cloneImage()
+      data   downloadFromWalrus2CC()
+             cloneImage()
+      rpc 消息 "image/prepare/success" 给 cc 的 cc_rpc_handle_prepare_success()—>prepareImageFinished()
+          prepareImageFinished()发送http request给clc的image_create_task_prepare_success()
+          clc更新ectaskTransaction数据库为"preparing/done"
+      amqp message "taskstatus : preparing/done" 给cc的 "cc_status_queue"
+          cc通过amqp转发消息给clc的“clc_status_queue”
+             clc把收到的消息存到memcahe里面
+3 client http request 到 clc 的 rvd_run()->image_create_task_run()
+  clc http request 到 cc 的 image_create_task_run()
+  cc 发送 zmq 消息 'image/run' 到 nc
+  nc 启动 runImageTaskThread 进程
+      creatvm() -> vbox_createVM()
+      runvm()   -> vbox_runVM()
+      rpc ‘image/edit/running’ 消息给 cc 的 cc_rpc_handle_image_running()
+          updateVMStatus()发送http request给clc的image_create_task_updatevmstatus()
+          clc更新ectaskTransaction数据库为新的vmstate=running
+      amqp 更新 nc 的 status report
+4. client http request 到 clc 的  delete_tasks()/rvd_stop()
+   clc->delete_tasks()->delet_task_by_id() 发送 http request 到 cc 的 delete_tasks()， 然后删除ectaskTransaction中的记录
+       cc 发送 zmq 消息 'task/delete' 到 nc 的 nc_task_delete_handle()
+          nc 启动 DeleteImageTaskThread 进程
+            调用 process_delete_cmd()
+                调用process_stop_cmd()
+                vboxmgr.unregisterVM()
+                vboxmgr.deleteVMConfigFile()
+                清除vbox的medium
+                删除vm的临时目录
+            调用 update_nc_running_status() 通过 amqp 机制更新nc的状态
+   clc->rvd_stop()->image_create_task_stop() 发送 http request 到 cc 的 image_create_task_stop()
+       cc 发送 zmq 消息 'image/stop' 到 nc 的 nc_image_stop_handle()
+          nc 启动 StopImageTaskThread 进程
+            调用 process_stop_cmd()
+                pkill ndp 进程 或者 vbox poweroff
+                发送amqp消息taskstatus:editing/stopped到cc
+                恢复快照
+5. 检测到有vm关机了，发送'ndp/stop'消息给nc_cmd_consumer->nc_ndp_stop_handle()->update_nc_running_status(external msg)
+   发送amqp消息nodestatus到cc的cc_status_queue，然后转发到clc的clc_status_queue
+   clc在处理nodestatus消息是，查找external部分的ndp/stop消息，调用ndpStopCLCWrapper，http request到clc的image_ndp_stop()
+     调用delet_task_by_id()/image_create_task_stop()
+
+########################################################
+这里的重点是确保
+- preparing/done
+- edit/running
+- edit/stopped
+这三条消息能够及时更新到clc的memcache上，无论负载有多大。
+
+解决方案：
+prepare/done:
+    nc发送http request给cc，cc转发http request给clc，clc更新db和memcache
+    nc只有在request返回为200的时候，才会停止发送，否则尝试10次。cc直接返回request的结果给nc
+edit/running
+    nc发送http request给cc,cc转发http request给clc，clc更新db和memcache
+    nc只有在request返回为200的时候，才会停止发送，否则尝试10次。cc直接返回request的结果给nc
+edit/stopped
+
+clc-->http-->cc-->zmq-->nc
+  return code == 200, 否则尝试10次
+nc-->zmq-->cc-->http-->clc
+  recv到OK的确认，否则尝试10次
+########################################################
 
 for VD and PVD,
 admin create a concept, assign to user
@@ -188,5 +261,3 @@ class ecCCResources(models.Model):
     1. account/ip/mac setting rule before running vm
     2. images filtering rule before display
     3. ... ...
-
-

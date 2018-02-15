@@ -55,7 +55,6 @@ def removeIPtables_image_create_task(request):
 ## Image build functions
 #####################################
 def image_create_task_prepare(request):
-    logger.error("--- --- --- prepare_image_create_task")
     ncip = request.POST['ncip']
 
     message = {}
@@ -65,8 +64,8 @@ def image_create_task_prepare(request):
     message['runtime_option']   = request.POST['runtime_option']
     message = json.dumps(message)
 
+    logger.error("cc image_create_task_prepare  - send prepare cmd to nc")
     zmq_send(ncip, message, NC_CMD_QUEUE_PORT)
-    logger.error("--- --- ---zmq: send prepare cmd to nc sucessfully")
 
     # return http response
     response = {}

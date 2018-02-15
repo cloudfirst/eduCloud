@@ -15,6 +15,7 @@ class cc_statusConsumer():
         simple_send(logger, self.clcip, 'clc_status_queue', message)
 
     def statusMessageHandle(self, ch, method, properties, body):
+        logger.error("cc_status_queue: %s" % json.dumps(json.loads(body), indent=4))
         self.forwardTaskStatus2CLC(body)
 
     def run(self):

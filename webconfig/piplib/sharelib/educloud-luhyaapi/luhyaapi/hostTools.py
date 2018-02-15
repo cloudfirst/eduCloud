@@ -280,7 +280,7 @@ def DoesServiceExist(host, port, protocol='tcp'):
         return "Running"
     except Exception as e:
         logger.error(str(e))
-        return str(e)
+        return "Closed"
 
 
 def get_ssh_status():

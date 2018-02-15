@@ -43,9 +43,9 @@ class clc_statusConsumer():
         self.save2Mem(key, message)
 
         # test save is ok
-        #if flag == 1:
-        #    payload = self.mc.get(key)
-        #    logger.error("thomas#load %s=%s" % (key, payload))
+        if flag == 1:
+           payload = self.mc.get(key)
+           logger.error("save taskstatus %s" %  json.dumps(json.loads(payload), indent=4) )
 
     def statusMessageHandle(self, ch, method, properties, body):
         self.forwardMessage2Memcache(body)
@@ -67,6 +67,7 @@ def ndpStopCLCWrapper(data, runtime_option=None):
         url = "http://%s/clc/image/ndp/stop" % ('127.0.0.1')
     payload = {
         'insid'   : data,
+        'runtime_option': runtime_option
     }
 
     logger.error('ndp/stop: ndpStopCLCWrapper:' + url)
