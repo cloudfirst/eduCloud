@@ -11,6 +11,4 @@ if [ "$1" = "configure" ]; then
     ln -s /usr/local/nodedaemon/nc/nc_status_publisher  /usr/bin/nc_status_publisher || true
     ln -s /usr/local/nodedaemon/nc/nc_sshfs             /usr/bin/nc_sshfs || true
 
-    systemctl enable supervisor || true
-    systemctl start supervisor  || true
 fi

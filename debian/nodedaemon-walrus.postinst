@@ -6,6 +6,4 @@ if [ "$1" = "configure" ]; then
 
     ln -s /usr/local/nodedaemon/walrus/walrus_status_publisher /usr/bin/walrus_status_publisher || true
 
-    systemctl enable supervisor || true
-    systemctl start supervisor  || true
 fi
