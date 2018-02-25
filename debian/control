@@ -8,7 +8,7 @@ Standards-Version: 3.8.3
 
 Package: educloud-core
 Architecture: all
-Depends:  python2.7, python-pip, python-dev, python-ldap, openssl, ldap-utils, libldap2-dev, ifstat, sysstat, sudo, openssh-server, sshfs, sshpass, iperf, iotop, supervisor, libzmq3-dev, nodedaemon-exporter
+Depends:  python2.7, python-pip, python-dev, python-ldap, openssl, ldap-utils, libldap2-dev, ifstat, sysstat, sudo, openssh-server, sshfs, sshpass, iperf, iotop, supervisor, libzmq3-dev
 Description: educloud basic package
 
 Package: educloud-webbase
@@ -65,8 +65,3 @@ Package: nodedaemon-nc
 Architecture: all
 Depends:  educloud-core, virtualbox-4.3, memcached, libmemcached-tools
 Description: educloud nc daemon package for vbox hypervisor
-
-Package: nodedaemon-exporter
-Architecture: all
-Depends: supervisor
-Description: node exporter for prometheus.

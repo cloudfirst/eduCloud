@@ -289,3 +289,34 @@ def delete_tasks(request):
 
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
+
+def simple_update_task_status(ip, role, status_payload):
+    url = "http://%s/%s/task/status/update" % (ip, role)
+    payload = {
+        "taskstatus" : json.dumps(status_payload)
+    }
+    try:
+        r = requests.post(url, data=payload, timeout=None)
+        return r
+    except Exception as e:
+        logger.error("simple_update_task_status get exception = %s" % str(e))
+
+
+def task_status_update(request):
+    taskstatus = json.loads(request.POST['taskstatus'])
+
+    message = {}
+    message['type']             = "cmd"
+    message['op']               = 'task/status/update'
+    message['taskstatus']       = taskstatus
+    message = json.dumps(message)
+
+    zmq_send("127.0.0.1", message, CC_CMD_QUEUE_PORT)
+    logger.error("--- --- ---zmq: send task status update cmd to cc daemone sucessfully")
+
+    # return http response
+    response = {}
+    response['Result'] = 'OK'
+
+    retvalue = json.dumps(response)
+    return HttpResponse(retvalue, content_type="application/json")

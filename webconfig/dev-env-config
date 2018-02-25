@@ -61,18 +61,37 @@ VM启动关闭消息流分析
       amqp message "taskstatus : preparing/done" 给cc的 "cc_status_queue"
           cc通过amqp转发消息给clc的“clc_status_queue”
              clc把收到的消息存到memcahe里面
+#################
+UPGRADE SOLUTION
+#################
+- 去掉全局rpc消息和amqp消息
+- 替换为nc发送http post消息"taskstatus : preparing/done" 给cc, cc转发给clc, clc更新db和memcache
+  clc收到post消息后更新memcache和db
+- nc只有收到200结果后才会停止更新
+
 3 client http request 到 clc 的 rvd_run()->image_create_task_run()
   clc http request 到 cc 的 image_create_task_run()
   cc 发送 zmq 消息 'image/run' 到 nc
   nc 启动 runImageTaskThread 进程
-      creatvm() -> vbox_createVM()
-      runvm()   -> vbox_runVM()
+      creatvm() -> vbox_createVM() -> “taskstatus：edit/booting”消息通过amqp发送给cc，再转发到clc
+      runvm()   -> vbox_runVM()    -> “taskstatus：edit/running”消息通过amqp发送给cc，再转发到clc
       rpc ‘image/edit/running’ 消息给 cc 的 cc_rpc_handle_image_running()
           updateVMStatus()发送http request给clc的image_create_task_updatevmstatus()
           clc更新ectaskTransaction数据库为新的vmstate=running
       amqp 更新 nc 的 status report
+#################
+UPGRADE SOLUTION
+#################
+- vbox_createVM()后
+  把amqp消息替换为nc发送http post消息"taskstatus : edit/booting" 给cc, cc转发给clc，clc更新db和memcache
+  nc只有收到200结果后才会停止更新
+- vbox_runVM()后
+  把amqp消息替换为nc发送http post消息"taskstatus : edit/running" 给cc, cc转发给clc，clc更新db和memcache
+  nc只有收到200结果后才会停止更新
+- 去掉全局的rpc消息和amqp消息
+
 4. client http request 到 clc 的  delete_tasks()/rvd_stop()
-   clc->delete_tasks()->delet_task_by_id() 发送 http request 到 cc 的 delete_tasks()， 然后删除ectaskTransaction中的记录
+   clc->delete_tasks()->delet_task_by_id() 发送 http request 到 cc 的 delete_tasks()， #然后删除ectaskTransaction中的记录
        cc 发送 zmq 消息 'task/delete' 到 nc 的 nc_task_delete_handle()
           nc 启动 DeleteImageTaskThread 进程
             调用 process_delete_cmd()
@@ -82,17 +101,32 @@ VM启动关闭消息流分析
                 清除vbox的medium
                 删除vm的临时目录
             调用 update_nc_running_status() 通过 amqp 机制更新nc的状态
-   clc->rvd_stop()->image_create_task_stop() 发送 http request 到 cc 的 image_create_task_stop()
+   clc->rvd_stop()->image_create_task_stop() 发送 http request 到 cc 的 image_create_task_stop(), #然后更新ectaskTransaction中的记录
        cc 发送 zmq 消息 'image/stop' 到 nc 的 nc_image_stop_handle()
           nc 启动 StopImageTaskThread 进程
             调用 process_stop_cmd()
                 pkill ndp 进程 或者 vbox poweroff
                 发送amqp消息taskstatus:editing/stopped到cc
                 恢复快照
+#################
+UPGRADE SOLUTION
+#################
+- clc发送http request到cc，确保反馈为200
+- cc发送zmq消息给nc，确保反馈为OK
+- nc取消发送amqp消息，改为向cc发送http request消息taskstatus:editing/stopped|deleted，cc转发给clc，clc更新db和memcache
+
 5. 检测到有vm关机了，发送'ndp/stop'消息给nc_cmd_consumer->nc_ndp_stop_handle()->update_nc_running_status(external msg)
    发送amqp消息nodestatus到cc的cc_status_queue，然后转发到clc的clc_status_queue
    clc在处理nodestatus消息是，查找external部分的ndp/stop消息，调用ndpStopCLCWrapper，http request到clc的image_ndp_stop()
      调用delet_task_by_id()/image_create_task_stop()
+#################
+UPGRADE SOLUTION
+#################
+- 取消amqp消息
+- nc收到“ndp/stop"消息后，发送zmq消息给cc，然后cc发送zmq消息给clc
+- clc daemon发送http request给clc（等同于模拟客户点击Stop按钮）
+- 回到delete_tasks()/rvd_stop()的处理
+
 
 ########################################################
 这里的重点是确保
@@ -100,15 +134,6 @@ VM启动关闭消息流分析
 - edit/running
 - edit/stopped
 这三条消息能够及时更新到clc的memcache上，无论负载有多大。
-
-解决方案：
-prepare/done:
-    nc发送http request给cc，cc转发http request给clc，clc更新db和memcache
-    nc只有在request返回为200的时候，才会停止发送，否则尝试10次。cc直接返回request的结果给nc
-edit/running
-    nc发送http request给cc,cc转发http request给clc，clc更新db和memcache
-    nc只有在request返回为200的时候，才会停止发送，否则尝试10次。cc直接返回request的结果给nc
-edit/stopped
 
 clc-->http-->cc-->zmq-->nc
   return code == 200, 否则尝试10次

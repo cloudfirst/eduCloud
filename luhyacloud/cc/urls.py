@@ -22,5 +22,7 @@ urlpatterns = patterns('',
     url(r'^api/1.0/getimageversion$',        views.get_images_version,                 name='get_images_version'),
     url(r'^api/1.0/verify/clc/cc/file/ver$', views.verify_clc_cc_file_ver,             name='verify_clc_cc_file_ver'),
 
+    url(r'^task/status/update$',        views.task_status_update,                 name='task_status_update'),
+
 
     )

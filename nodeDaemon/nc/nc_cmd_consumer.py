@@ -380,21 +380,23 @@ class prepareImageTaskThread(multiprocessing.Process):
 
             if done_1 == False or done_2 == False:
                 logger.error('%s:send cmd image/prepare/failure' % self.tid)
-                self.download_rpc.call(cmd="image/prepare/failure", tid=data['tid'], paras=data['rsync'])
+                payload['failed']   = 1
+                if done_1 == False:
+                    payload['errormsg'] = "prepare system disk failed. try again."
+                if done_2 == False:
+                    payload['errormsg'] = "prepare data disk failed. try again"
+                payload['state']    = 'init'
+                safe_update_task_status(self.ccip, "cc", payload)
             else:
                 logger.error('%s:send cmd image/prepare/success' % self.tid)
-                self.download_rpc.call(cmd="image/prepare/success", tid=data['tid'], paras=data['rsync'])
-                payload = json.dumps(payload)
-                self.forwardTaskStatus2CC(payload)
+                safe_update_task_status(self.ccip, "cc", payload)
         except Exception as e:
             logger.error("%s:prepareImageTask Exception: %s" % (self.tid, str(e)))
             logger.error('%s:after exception, send cmd image/prepare/failure' % self.tid)
-            self.download_rpc.call(cmd="image/prepare/failure", tid=data['tid'], paras=data['rsync'])
-
             payload['failed']   = 1
-            payload['errormsg'] = str(e)
+            payload['errormsg'] = "Get Excetpion:" + str(e)
             payload['state']    = 'init'
-            self.forwardTaskStatus2CC(json.dumps(payload))
+            safe_update_task_status(self.ccip, "cc", payload)
 
 class SubmitImageTaskThread(multiprocessing.Process):
     def __init__(self, tid, runtime_option):
@@ -605,7 +607,7 @@ class SubmitImageTaskThread(multiprocessing.Process):
                 self.task_finished()
                 payload = json.dumps(payload)
                 self.forwardTaskStatus2CC(payload)
-                time.sleep(20)	
+                time.sleep(20)
                 logger.error('send cmd image/submit/success whith payload=%s' % payload)
                 self.download_rpc.call(cmd="image/submit/success", tid=data['tid'], paras=data['rsync'])
 
@@ -725,7 +727,6 @@ class runImageTaskThread(multiprocessing.Process):
                     logger.error("--- --- --- vboxmgr.unregisterVM, error=%s" % ret)
                     ret = vboxmgr.registerVM()
                     logger.error("--- --- --- vboxmgr.registerVM, error=%s" % ret)
-
                 except Exception as e:
                     logger.error("createVM Exception error=%s" % str(e))
                     ret = vboxmgr.unregisterVM()
@@ -733,16 +734,14 @@ class runImageTaskThread(multiprocessing.Process):
                     flag = False
                     payload['failed']   = 1
                     payload['state']    = 'stopped'
-                    payload['errormsg'] = str(e)
+                    payload['errormsg'] = "vbox_createVM exception=" + str(e)
 
-        simple_send(logger, self.ccip, 'cc_status_queue', json.dumps(payload))
-        logger.error('createvm result: %s' % json.dumps(payload))
+        logger.error('createvm result: %s' % json.dumps(payload, indent=4))
+        safe_update_task_status(self.ccip, "cc", payload)
         return flag
-
 
     def kvm_createVM(self):
         pass
-
 
     # need to consider vd & vs creation
     # c: d: e: f:
@@ -830,12 +829,11 @@ class runImageTaskThread(multiprocessing.Process):
             flag = False
             payload['failed'] = 1
             payload['state'] = 'stopped'
-            payload['errormsg'] = str(e)
+            payload['errormsg'] = "vbox_runVM exception=" + str(e)
             process_delete_cmd(self.tid, self.runtime_option)
 
-        simple_send(logger, self.ccip, 'cc_status_queue', json.dumps(payload))
-        logger.error('runvm result: %s' % json.dumps(payload))
-        logger.error("--- --- --- exit vbox_runVM")
+        logger.error('runvm result: %s' % json.dumps(payload, indent=4))
+        safe_update_task_status(self.ccip, "cc", payload)
         return flag
 
     def kvm_runVM(self):
@@ -854,19 +852,10 @@ class runImageTaskThread(multiprocessing.Process):
             try:
                 done_1 = False
                 done_2 = False
-
                 if self.createvm() == True:
                     done_1 = True
                     if self.runvm() == True:
                         done_2 = True
-
-                if done_1 == False or done_2 == False:
-                    self.rpcClient.call(cmd="image/edit/stopped", tid=self.tid, paras='')
-                else:
-                    self.rpcClient.call(cmd="image/edit/running", tid=self.tid, paras='')
-
-                # need to update nc's status at once
-                update_nc_running_status()
             except Exception as e:
                 logger.error("runImageTask Exception Error Message : %s" % str(e))
 
@@ -894,10 +883,43 @@ class DeleteImageTaskThread(multiprocessing.Process):
             logger.error("DeleteImageTaskThread load runtime_option=%s error" % runtime_option)
             self.runtime_option =''
 
-    def run(self):
         process_delete_cmd(self.tid, self.runtime_option)
         # need to update nc's status at once
         update_nc_running_status()
+
+class rebootPoweroffHandleTaskThread(multiprocessing.Process):
+    def __init__(self, ):
+        multiprocessing.Process.__init__(self)
+
+    def handle_reboot_and_poweroff(self):
+        vms = os.listdir('/storage/VMs/')
+        vms = getNotRunningVMs(vms)
+        for insid in vms:
+            nc_ndp_stop_handle(insid, "")
+
+    def run(self):
+        self.handle_reboot_and_poweroff()
+
+class ndpStopHandleThread(multiprocessing.Process):
+    def __init__(self, insid, runtime_option):
+        multiprocessing.Process.__init__(self)
+        self.insid = insid
+        self.runtime_option = runtime_option
+
+    def run(self):
+        ccip = getccipbyconf()
+        payload = {
+            'type': 'taskstatus',
+            'phase': "editing",
+            'state': 'ndpstopped',
+            'tid': "%s:%s:%s" % (self.insid, self.insid, self.insid),
+            'insid': self.insid,
+            'errormsg': '',
+            'failed': 0,
+            'ccip': ccip,
+            'ncip': getHostNetInfo()['ip0'],
+        }
+        safe_update_task_status(ccip, "cc", payload)
 
 def update_nc_running_status(external=None):
     payload = { }
@@ -942,7 +964,6 @@ def process_stop_cmd(tid, runtime_option):
     }
 
     ccip = getccipbyconf()
-    simple_send(logger, ccip, 'cc_status_queue', json.dumps(payload))
 
     # process for different type instance
     if srcimgid != dstimgid:
@@ -971,10 +992,22 @@ def process_stop_cmd(tid, runtime_option):
             logger.error('zmq:restore snapshot thomas for %s' % insid)
 
     logger.error("Step 2 of 2: restore snapshot of %s " % insid)
+    safe_update_task_status(ccip, "cc", payload)
 
 def process_delete_cmd(tid, runtime_option):
     logger.error("Step 1: stop the VM when delete task of %s" % tid)
     process_stop_cmd(tid, runtime_option)
+
+    ccip = getccipbyconf()
+    payload = {
+            'type'      : 'taskstatus',
+            'phase'     : "editing",
+            'state'     : 'deleted',
+            'progress'  : 0,
+            'tid'       : tid,
+            'errormsg'  : '',
+            'failed'    : 0
+    }
 
     retval   = tid.split(':')
     srcimgid = retval[0]
@@ -1019,6 +1052,8 @@ def process_delete_cmd(tid, runtime_option):
             if os.path.exists(os.path.dirname(disk)):
                 logger.error("%s is not really deleted." % disk)
 
+    safe_update_task_status(ccip, "cc", payload)
+
 #################################################
 #  cmd handle function
 
@@ -1052,12 +1087,34 @@ def nc_task_delete_handle(tid, runtime_option):
     return worker
 
 def nc_ndp_stop_handle(insid, runtime_option):
-    logger.error("--- --- ---ndp/stop: nc_ndp_stop_handle %s " % insid)
-    ext = {}
-    ext['op'] = 'ndp/stop'
-    ext['data'] = insid
-    ext['runtime_option'] = runtime_option
-    update_nc_running_status(external=ext)
+    logger.error("--- --- ---zmq: nc_ndp_stop_handle %s " % insid)
+    worker = ndpStopHandleThread(insid, runtime_option)
+    worker.start()
+    return worker
+
+def safe_update_task_status(ip, role, status_payload):
+    retry = 10
+    url = "http://%s/%s/task/status/update" % (ip, role)
+    payload = {
+        "taskstatus" : json.dumps(status_payload)
+    }
+    while retry > 0:
+        try:
+            r = requests.post(url, data=payload, timeout=(3,9))
+            if r.status_code == 200:
+                logger.error("safe_update_task_status url=%s with 200 status code and payload %s" % (url, json.dumps(status_payload, indent=4)))
+                retry = 0
+                continue
+            else:
+                logger.error("safe_update_task_status url=%s failed with status_code = %d and payload = %s" % (url, r.status_code, json.dumps(status_payload, indent=4)))
+                logger.error("safe_update_task_status r.content=%s" % r.content)
+            retry = retry - 1
+            time.sleep(3)
+        except Exception as e:
+            logger.error("safe_update_task_status try %d time and get exception = %s" % (retry, str(e)))
+
+    if retry <= 0:
+        logger.error("safe_update_task_status %d time and failed to update task status.")
 
 
 nc_cmd_handlers = {
@@ -1088,22 +1145,15 @@ class nc_cmdConsumer():
         except Exception as e:
             logger.error("zmq: exception =  %s" % str(e))
 
-
-    def handle_reboot_and_poweroff(self):
-        runtime_option = {}
-        runtime_option["ccip"] = getccipbyconf()
-        runtime_option["ncip"] = getHostNetInfo()['ip0']
-        vms = os.listdir('/storage/VMs/')
-        vms = getNotRunningVMs(vms)
-        for insid in vms:
-            nc_ndp_stop_handle(insid, runtime_option)
-
     def run(self):
-        self.handle_reboot_and_poweroff()
+        worker = rebootPoweroffHandleTaskThread()
+        worker.start()
         while True:
             msg = self.socket.recv()
             self.socket.send('OK')
+            logger.error("start nc_cmdConsumer.cmdHandle")
             self.cmdHandle(msg)
+            logger.error("end   nc_cmdConsumer.cmdHandle")
 
 def main():
     consumer = nc_cmdConsumer()

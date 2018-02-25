@@ -19,16 +19,23 @@ DAEMON_WALRUS   =debian/nodedaemon-walrus
 DAEMON_CC       =debian/nodedaemon-cc
 DAEMON_NC       =debian/nodedaemon-nc
 DAEMON_TNC	=debian/nodedaemon-tnc
-DAEMON_EXPORTER =debian/nodedaemon-exporter
 
 build:
 	echo "now is building educloud debian packages ... ... "
 clean:
 	echo "now is cleaning educloud debian packages ... ... "
 	rm -fr $(EDU_CORE) $(EDU_WEBBASE) $(WEB_PORTAL) $(WEB_CLC) $(WEB_WALRUS) $(WEB_CC) $(WEB_VIRTAPP) $(WEB_BIZRULE)
-	rm -fr $(DAEMON_CLC) $(DAEMON_WALRUS) $(DAEMON_CC) $(DAEMON_NC) $(DAEMON_EXPORTER)
+	rm -fr $(DAEMON_CLC) $(DAEMON_WALRUS) $(DAEMON_CC) $(DAEMON_NC)
 	rm debian/*.debhelper.log debian/*.substvars  debian/files debian/stamp* debian/compat
 	find ./nodeDaemon -name *.spec -delete
+	rm webconfig/serverTools/recoverVMfromCrash.spec
+	rm webconfig/piplib/3rd/luhyaapi-*.tar.gz
+	rm ../*.deb ../pip.tar
+publish:
+	rm /mnt/src/AutoITManagement/playbook/roles/allinone-ndp/files/*4.0.9*.deb
+	rm /mnt/src/AutoITManagement/playbook/roles/allinone-ndp/files/pip.tar
+	cp ../*.deb   /mnt/src/AutoITManagement/playbook/roles/allinone-ndp/files/
+	cp ../pip.tar /mnt/src/AutoITManagement/playbook/roles/allinone-ndp/files
 install:
 	####################
 	#     LUHYA API    #
@@ -216,13 +223,3 @@ install:
 	install -d $(DAEMON_NC)/usr/local/bin
 	cd $(CURDIR)/webconfig/serverTools/ && sudo -u luhya pyinstaller recoverVMfromCrash.py -F -s
 	cp $(CURDIR)/webconfig/serverTools/dist/recoverVMfromCrash             $(DAEMON_NC)/usr/local/bin/
-
-	##########################
-	#     DAEMON_EXPORTER    #
-	##########################
-	install -d $(DAEMON_EXPORTER)/usr/local/nodedaemon/exporter
-
-	tar vxf $(CURDIR)/webconfig/prometheus/exporter/node_exporter-0.14.0.linux-amd64.tar.gz -C  $(DAEMON_EXPORTER)/usr/local/nodedaemon/exporter
-
-	install -d $(DAEMON_EXPORTER)/etc/supervisor/conf.d
-	cp $(CURDIR)/webconfig/prometheus/exporter/supervisor/nodedaemon-exporter.conf   $(DAEMON_EXPORTER)/etc/supervisor/conf.d/

@@ -270,4 +270,6 @@ urlpatterns = patterns('',
 
     url(r'^api/1.0/set_log_level$',         views.set_log_level,              name='set_log_level'),
 
+    url(r'^task/status/update$',        views.task_status_update,                 name='task_status_update'),
+
     )
