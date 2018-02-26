@@ -4,7 +4,7 @@ sudo dpkg -i nodedaemon-nc_*_all.deb
 sudo dpkg -i ndp-server_*_amd64.deb
 
 sudo chown -R luhya:luhya /usr/local/nodedaemon
-sudo chown -R luhya:luhay /usr/local/webconfig
+sudo chown -R luhya:luhya /usr/local/webconfig
 
 mkdir tmp
 tar vxf pip.tar -C ./tmp/

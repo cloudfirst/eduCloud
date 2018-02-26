@@ -621,7 +621,6 @@ class SubmitImageTaskThread(multiprocessing.Process):
             payload['state'] = 'init'
             self.forwardTaskStatus2CC(json.dumps(payload))
 
-
 class runImageTaskThread(multiprocessing.Process):
     def __init__(self, tid, runtime_option):
         multiprocessing.Process.__init__(self)
@@ -992,7 +991,7 @@ def process_stop_cmd(tid, runtime_option):
             logger.error('zmq:restore snapshot thomas for %s' % insid)
 
     logger.error("Step 2 of 2: restore snapshot of %s " % insid)
-    safe_update_task_status(ccip, "cc", payload)
+    # safe_update_task_status(ccip, "cc", payload)
 
 def process_delete_cmd(tid, runtime_option):
     logger.error("Step 1: stop the VM when delete task of %s" % tid)
@@ -1052,7 +1051,7 @@ def process_delete_cmd(tid, runtime_option):
             if os.path.exists(os.path.dirname(disk)):
                 logger.error("%s is not really deleted." % disk)
 
-    safe_update_task_status(ccip, "cc", payload)
+    # safe_update_task_status(ccip, "cc", payload)
 
 #################################################
 #  cmd handle function
@@ -1093,28 +1092,29 @@ def nc_ndp_stop_handle(insid, runtime_option):
     return worker
 
 def safe_update_task_status(ip, role, status_payload):
-    retry = 10
+    retry = 0
+    flag  = False
     url = "http://%s/%s/task/status/update" % (ip, role)
     payload = {
         "taskstatus" : json.dumps(status_payload)
     }
-    while retry > 0:
+    while retry < 10 and not flag:
         try:
-            r = requests.post(url, data=payload, timeout=(3,9))
+            r = requests.post(url, data=payload, timeout=None)
             if r.status_code == 200:
                 logger.error("safe_update_task_status url=%s with 200 status code and payload %s" % (url, json.dumps(status_payload, indent=4)))
-                retry = 0
+                flag = True
                 continue
             else:
                 logger.error("safe_update_task_status url=%s failed with status_code = %d and payload = %s" % (url, r.status_code, json.dumps(status_payload, indent=4)))
                 logger.error("safe_update_task_status r.content=%s" % r.content)
-            retry = retry - 1
-            time.sleep(3)
+            retry = retry + 1
+            time.sleep(5)
         except Exception as e:
             logger.error("safe_update_task_status try %d time and get exception = %s" % (retry, str(e)))
 
-    if retry <= 0:
-        logger.error("safe_update_task_status %d time and failed to update task status.")
+    if flag == False:
+        logger.error("safe_update_task_status retry %d time and failed to update task status." % retry)
 
 
 nc_cmd_handlers = {

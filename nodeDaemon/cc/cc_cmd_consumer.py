@@ -12,16 +12,41 @@ import time, json, os
 logger = getccdaemonlogger()
 
 def cc_handle_task_status_update(message):
+    retry = 0
+    flag  = False
     clcip = getclcipbyconf(mydebug=DAEMON_DEBUG)
-    url = "http://%s/%s/task/status/update" % (clcip, "clc")
-    payload = {
-        "taskstatus" : json.dumps(message['taskstatus'])
-    }
-    try:
-        r = requests.post(url, data=payload, timeout=None)
-        logger.error("cc_handle_task_status_update url=%s with status code=%d and payload=%s" % (url, r.status_code, json.dumps(message['taskstatus'], indent=4)))
-    except Exception as e:
-        logger.error("cc_handle_task_status_update get exception = %s" % str(e))
+    taskstatus = message['taskstatus']
+    if taskstatus['state'] == "ndpstopped":
+        url = url = "http://%s/clc/image/ndp/stop" % clcip
+        runtime_option = {
+            "ccip": taskstatus['ccip'],
+            "ncip": taskstatus['ncip']
+        }
+        payload = {
+            'insid'   : taskstatus['insid'],
+            'runtime_option': runtime_option
+        }
+    else:
+        url = "http://%s/clc/task/status/update" % clcip
+        payload = {
+            "taskstatus" : json.dumps(message['taskstatus'])
+        }
+
+    while retry < 10  and not flag:
+        try:
+            r = requests.post(url, data=payload, timeout=None)
+            if r.status_code == 200:
+                flag = True
+            else:
+                retry = retry + 1
+                time.sleep(5)
+            logger.error("cc_handle_task_status_update url=%s with status code=%d and payload=%s" % (url, r.status_code, json.dumps(message['taskstatus'], indent=4)))
+            logger.error("cc_handle_task_status_update r.content=%s" % r.content)
+        except Exception as e:
+            logger.error("cc_handle_task_status_update try %d time and get exception = %s" % (retry, str(e)))
+
+    if flag == False:
+        logger.error("safe_update_task_status retry %d time and failed to update task status." % retry)
 
 cc_zmq_handlers = {
     'task/status/update':       cc_handle_task_status_update

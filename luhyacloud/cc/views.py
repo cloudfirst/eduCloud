@@ -304,6 +304,7 @@ def simple_update_task_status(ip, role, status_payload):
 
 def task_status_update(request):
     taskstatus = json.loads(request.POST['taskstatus'])
+    logger.error("taskstatus = %s" % json.dumps(taskstatus, indent=4))
 
     message = {}
     message['type']             = "cmd"

@@ -2698,23 +2698,18 @@ def image_ndp_stop(request):
             return image_create_task_stop(request, rec.srcimgid, rec.dstimgid, rec.insid)
         if rec.insid.find("VS") == 0:
             return image_create_task_stop(request, rec.srcimgid, rec.dstimgid, rec.insid)
-
     except Exception as e:
         logger.error('---ndp/stop: image_ndp_stop error = %s ' % str(e))
         runtime_option = request.POST['runtime_option']
         runtime_option = json.loads(runtime_option)
 
         if insid.find("TVD") == 0 or insid.find('VD') == 0:
-            operation = "delete"
+            url = 'http://%s/cc/api/1.0/task/delete' % runtime_option['ccip']
         if insid.find('PVD') == 0 or insid.find('VS') == 0:
             operation = "stop"
+            url = 'http://%s/cc/api/1.0/image/create/task/stop' % runtime_option['ccip']
 
         # # send request to CC to work
-        if DAEMON_DEBUG == True:
-            url = 'http://%s:8000/cc/api/1.0/task/%s' % (runtime_option['ccip'], operation)
-        else:
-            url = 'http://%s/cc/api/1.0/task/%s' % (runtime_option['ccip'], operation)
-
         payload = {
             'tid': "%s:%s:%s" % (insid, insid, insid),
             'ncip': runtime_option['ncip'],
@@ -6330,48 +6325,24 @@ def get_django_debug(request):
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
 
-def ndpStopCLCWrapper(data, runtime_option=None):
-    url = "http://%s/clc/image/ndp/stop" % ('127.0.0.1')
-    payload = {
-        'insid'   : data,
-        'runtime_option': json.dumps(runtime_option)
-    }
-    logger.error('ndp/stop: ndpStopCLCWrapper:' + url)
-    logger.error('ndp/stop: ndpStopCLCWrapper:' + data)
-    r = requests.post(url, data=payload)
-    return r
-
 def task_status_update(request):
-    flag = 0
     taskstatus = request.POST['taskstatus']
     json_msg = json.loads(taskstatus)
     if json_msg['type'] == 'taskstatus':
         try:
-            if json_msg['state'] == "ndpstopped":
-                logger.error("task state == ndpstopped")
-                runtime_option = {}
-                runtime_option['ccip'] = json_msg['ccip']
-                runtime_option['ncip'] = json_msg['ncip']
-                return ndpStopCLCWrapper(json_msg['insid'], runtime_option)
-            else:
-                # update db table
-                rec = ectaskTransaction.objects.get(tid=json_msg['tid'])
-                if json_msg['state'] == "deleted":
-                    logger.error("task state == deleted")
-                    rec.delete()
-                else:
-                    # updat memcache
-                    key = str(json_msg['tid'])
-                    mc = memcache.Client(['127.0.0.1:11211'], debug=0)
-                    mc.set(key, taskstatus, 5 * 5 * 60)
-                    payload = mc.get(key)
-                    logger.error("clc save taskstatus to memcache with %s" % json.dumps(json.loads(payload), indent=4))
+            # update db table
+            rec = ectaskTransaction.objects.get(tid=json_msg['tid'])
+            rec.phase = json_msg['phase']
+            rec.state = json_msg['state']
+            rec.save()
+            logger.error("clc update task db with %s to %s %s" % (json_msg['tid'], json_msg['phase'], json_msg['state']))
 
-                    rec.phase = json_msg['phase']
-                    rec.state = json_msg['state']
-                    rec.save()
-                    logger.error("clc update task db with %s to %s %s" % (json_msg['tid'], json_msg['phase'], json_msg['state']))
-                flag = 1
+            # updat memcache
+            key = str(json_msg['tid'])
+            mc = memcache.Client(['127.0.0.1:11211'], debug=0)
+            mc.set(key, taskstatus, 5 * 5 * 60)
+            payload = mc.get(key)
+            logger.error("clc save taskstatus to memcache with %s" % json.dumps(json.loads(payload), indent=4))
         except Exception as e:
             logger.errro("clc task_status_update failed with error=%s" % str(e))
     else:
@@ -6380,13 +6351,7 @@ def task_status_update(request):
     response = {}
     response['Result'] = 'OK'
     retvalue = json.dumps(response)
-    if flag == 1:
-        return HttpResponse(retvalue, content_type="application/json")
-    else:
-        return HttpResponse(status=400)
-
-
-
+    return HttpResponse(retvalue, content_type="application/json")
 
 def set_log_level(request):
     pass

@@ -32,17 +32,17 @@ clean:
 	rm webconfig/piplib/3rd/luhyaapi-*.tar.gz
 	rm ../*.deb ../pip.tar
 publish:
-	rm /mnt/src/AutoITManagement/playbook/roles/allinone-ndp/files/educloud*.deb || true
-	rm /mnt/src/AutoITManagement/playbook/roles/allinone-ndp/files/nodedaemon*.deb || true
-	rm /mnt/src/AutoITManagement/playbook/roles/allinone-ndp/files/pip.tar || true
-	cp ../*.deb   /mnt/src/AutoITManagement/playbook/roles/allinone-ndp/files/
-	cp ../pip.tar /mnt/src/AutoITManagement/playbook/roles/allinone-ndp/files
-	rm /mnt/src/eduCloud/webconfig/upgrade/educloud*.deb || true
-	rm /mnt/src/eduCloud/webconfig/upgrade/nodedaemon*.deb || true
-	rm /mnt/src/eduCloud/webconfig/upgrade/pip.tar || true
-	cp ../*.deb   /mnt/src/eduCloud/webconfig/upgrade/
-	cp ../pip.tar /mnt/src/eduCloud/webconfig/upgrade/
-	tar -zcvf /tmp/upgrade.tar.gz /mnt/src/eduCloud/webconfig/upgrade
+	rm $(CURDIR)/../AutoITManagement/playbook/roles/allinone-ndp/files/educloud*.deb || true
+	rm $(CURDIR)/../AutoITManagement/playbook/roles/allinone-ndp/files/nodedaemon*.deb || true
+	rm $(CURDIR)/../AutoITManagement/playbook/roles/allinone-ndp/files/pip.tar || true
+	cp $(CURDIR)/../*.deb   $(CURDIR)/../AutoITManagement/playbook/roles/allinone-ndp/files/
+	cp $(CURDIR)/../pip.tar $(CURDIR)/../AutoITManagement/playbook/roles/allinone-ndp/files
+	rm $(CURDIR)/webconfig/upgrade/educloud*.deb || true
+	rm $(CURDIR)/webconfig/upgrade/nodedaemon*.deb || true
+	rm $(CURDIR)/webconfig/upgrade/pip.tar || true
+	cp ../*.deb   $(CURDIR)/webconfig/upgrade/
+	cp ../pip.tar $(CURDIR)/webconfig/upgrade/
+	cd $(CURDIR)/webconfig/ && tar -zcvf /tmp/upgrade.tar.gz upgrade/
 install:
 	####################
 	#     LUHYA API    #
