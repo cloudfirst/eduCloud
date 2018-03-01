@@ -19,6 +19,7 @@ sudo chown -R luhya:luhya /usr/local/webconfig
 mkdir tmp
 tar vxf pip.tar -C ./tmp/
 cd ./tmp
+sudo pip uninstall -y luhyaapi
 sudo pip install Django-*.tar.gz
 sudo pip install IPy-*.tar.gz
 sudo pip install MySQL-python-*.tar.gz

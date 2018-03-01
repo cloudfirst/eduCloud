@@ -75,6 +75,7 @@ def get_desktop_res():
     res['mem']       = int(conf_obj.getvalue('desktop', 'mem'))
     res['max_pboot_vms']   = int(conf_obj.getvalue('desktop', 'max_pboot_vms'))
     res['max_pboot_delay'] = int(conf_obj.getvalue('desktop', 'max_pboot_delay'))
+    res['max_wait_to_kill_interval'] = int(conf_obj.getvalue('desktop', 'max_wait_to_kill_interval'))
 
     return res
 

@@ -9,12 +9,28 @@ import pika, json, time, shutil, os, commands, zmq
 import multiprocessing, pexpect, memcache
 
 logger = getncdaemonlogger()
-my_semaphores = multiprocessing.Semaphore(get_desktop_res()['max_pboot_vms'])
+
+def getParallNumber():
+    pnum = get_desktop_res()['max_pboot_vms']
+    if pnum <= 0:
+        # not configured
+        logger.error("max_pboot_vms not configured, use the value of number of cpu core, minus one." )
+        pnum = multiprocessing.cpu_count() - 1
+        if pnum <= 1:
+            pnum = 1
+    logger.error("max_pboot_vms=%d" % pnum)
+    return pnum
+
+my_semaphores = multiprocessing.Semaphore(getParallNumber())
+
 my_pboot_delay = get_desktop_res()['max_pboot_delay']
+logger.error("max_pboot_delay=%d" % my_pboot_delay)
+
+my_wait_to_kill_interval = get_desktop_res()['max_wait_to_kill_interval']*60
+logger.error("max_wait_to_kill_interval=%d seconds" % my_wait_to_kill_interval)
 
 #################################################
 #  worker thread
-
 class prepareImageTaskThread(multiprocessing.Process):
     def __init__(self, tid, runtime_option):
         multiprocessing.Process.__init__(self)
@@ -838,6 +854,12 @@ class runImageTaskThread(multiprocessing.Process):
     def kvm_runVM(self):
         pass
 
+    def markInMemcache(self):
+        mc = memcache.Client(['127.0.0.1:11211'], debug=0)
+        key = "nc_startvm#" + str(self.insid)
+        mc.set(key, self.tid, my_wait_to_kill_interval)
+        logger.error("save %s=%s into memcache" % (key, self.tid))
+
     def runvm(self):
         hyper = getHypervisor()
         if hyper == 'vbox':
@@ -847,7 +869,8 @@ class runImageTaskThread(multiprocessing.Process):
 
     def run(self):
         with my_semaphores:
-            logger.error("Start proces %s" % self.tid)
+            self.markInMemcache()
+            logger.error("runImageTaskThread start proces %s - %s " % (self.tid, str(my_semaphores)))
             try:
                 done_1 = False
                 done_2 = False
@@ -859,7 +882,7 @@ class runImageTaskThread(multiprocessing.Process):
                 logger.error("runImageTask Exception Error Message : %s" % str(e))
 
             time.sleep(my_pboot_delay)
-            logger.error("Stop proces %s" % self.tid)
+        logger.error("runImageTaskThread stop  proces %s - %s" % (self.tid, str(my_semaphores)))
 
 
 class StopImageTaskThread(multiprocessing.Process):
@@ -1063,6 +1086,8 @@ def nc_image_prepare_handle(tid, runtime_option):
     return worker
 
 def nc_image_run_handle(tid, runtime_option):
+    recoverCrashedVMs()
+
     logger.error("--- --- ---zmq: nc_image_run_handle %s " % tid)
     worker = runImageTaskThread(tid, runtime_option)
     worker.start()

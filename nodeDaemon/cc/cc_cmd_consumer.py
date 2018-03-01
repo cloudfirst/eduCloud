@@ -24,7 +24,7 @@ def cc_handle_task_status_update(message):
         }
         payload = {
             'insid'   : taskstatus['insid'],
-            'runtime_option': runtime_option
+            'runtime_option': json.dumps(runtime_option)
         }
     else:
         url = "http://%s/clc/task/status/update" % clcip
@@ -40,7 +40,7 @@ def cc_handle_task_status_update(message):
             else:
                 retry = retry + 1
                 time.sleep(5)
-            logger.error("cc_handle_task_status_update url=%s with status code=%d and payload=%s" % (url, r.status_code, json.dumps(message['taskstatus'], indent=4)))
+            logger.error("cc_handle_task_status_update url=%s with status code=%d and payload=%s" % (url, r.status_code, json.dumps(payload, indent=4)))
             logger.error("cc_handle_task_status_update r.content=%s" % r.content)
         except Exception as e:
             logger.error("cc_handle_task_status_update try %d time and get exception = %s" % (retry, str(e)))

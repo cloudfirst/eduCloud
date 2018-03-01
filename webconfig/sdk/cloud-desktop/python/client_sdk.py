@@ -4,6 +4,7 @@ import json
 
 class cloudDesktopWrapper():
     def __init__(self):
+        self.session = requests.Session()
         self.sessionID      = ''
         self.user_id        = ''
         self.user_password  = ''
@@ -38,7 +39,7 @@ class cloudDesktopWrapper():
             'password'  : self.user_password,
         }
 
-        r = requests.post(url, data=payload)
+        r = self.session.post(url, data=payload)
         result = json.loads(r.content)
 
         if result['status'] == 'SUCCESS':
@@ -78,7 +79,7 @@ class cloudDesktopWrapper():
             'sid':  self.sessionID,
         }
 
-        r = requests.post(url, data=payload)
+        r = self.session.post(url, data=payload)
         result = json.loads(r.content)
         return result
 
@@ -94,7 +95,7 @@ class cloudDesktopWrapper():
         payload = {
             'sid': self.sessionID,
         }
-        r = requests.post(url, data=payload)
+        r = self.session.post(url, data=payload)
         result = json.loads(r.content)
         return result
 
@@ -117,7 +118,7 @@ class cloudDesktopWrapper():
         payload = {
             'sid': self.sessionID,
         }
-        r = requests.post(url, data=payload)
+        r = self.session.post(url, data=payload)
         result = json.loads(r.content)
         return result
 
@@ -141,7 +142,7 @@ class cloudDesktopWrapper():
         payload = {
             'sid': self.sessionID,
         }
-        r = requests.post(url, data=payload)
+        r = self.session.post(url, data=payload)
         result = json.loads(r.content)
         return result
 
@@ -161,7 +162,7 @@ class cloudDesktopWrapper():
         payload = {
             'sid': self.sessionID,
         }
-        r = requests.post(url, data=payload)
+        r = self.session.post(url, data=payload)
         result = json.loads(r.content)
         return result
 
@@ -184,7 +185,7 @@ class cloudDesktopWrapper():
         srcid, dstid, insid = self._parseTID(tid)
 
         url = 'http://%s:%s/%s/%s/%s/%s' % (self.host_ip,  self.host_port, self.progress_url, srcid, dstid, insid)
-        r = requests.post(url)
+        r = self.session.post(url)
         result = json.loads(r.content)
         return result
 
@@ -202,7 +203,7 @@ class cloudDesktopWrapper():
         payload = {
             'sid': self.sessionID,
         }
-        r = requests.post(url, data=payload)
+        r = self.session.post(url, data=payload)
         result = json.loads(r.content)
         return result
 
@@ -222,7 +223,7 @@ class cloudDesktopWrapper():
         srcid, dstid, insid = self._parseTID(tid)
 
         url = 'http://%s:%s/%s/%s/%s/%s' % (self.host_ip,  self.host_port, self.vmstatus_url, srcid, dstid, insid)
-        r = requests.post(url)
+        r = self.session.post(url)
         result = json.loads(r.content)
         return result
 
@@ -240,7 +241,7 @@ class cloudDesktopWrapper():
         payload = {
             'sid': self.sessionID,
         }
-        r = requests.post(url, data=payload)
+        r = self.session.post(url, data=payload)
         result = (r.content)
         return json.loads(result)
 
@@ -251,9 +252,10 @@ class cloudDesktopWrapper():
         payload = {
             'tid': tid,
         }
-        r = requests.post(url, data=payload)
+        r = self.session.post(url, data=payload)
         result = (r.content)
         return json.loads(result)
 
     def errorHandle(self, vmdata):
-        self.delet_vm(vmdata)
+        pass
+        # self.delet_vm(vmdata)

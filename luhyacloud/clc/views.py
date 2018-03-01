@@ -2699,25 +2699,27 @@ def image_ndp_stop(request):
         if rec.insid.find("VS") == 0:
             return image_create_task_stop(request, rec.srcimgid, rec.dstimgid, rec.insid)
     except Exception as e:
-        logger.error('---ndp/stop: image_ndp_stop error = %s ' % str(e))
-        runtime_option = request.POST['runtime_option']
-        runtime_option = json.loads(runtime_option)
+        logger.error('---ndp/stop: image_ndp_stop get exception = %s ' % str(e))
+        try:
+            runtime_option = request.POST['runtime_option']
+            runtime_option = json.loads(runtime_option)
 
-        if insid.find("TVD") == 0 or insid.find('VD') == 0:
-            url = 'http://%s/cc/api/1.0/task/delete' % runtime_option['ccip']
-        if insid.find('PVD') == 0 or insid.find('VS') == 0:
-            operation = "stop"
-            url = 'http://%s/cc/api/1.0/image/create/task/stop' % runtime_option['ccip']
-
-        # # send request to CC to work
-        payload = {
-            'tid': "%s:%s:%s" % (insid, insid, insid),
-            'ncip': runtime_option['ncip'],
-            'runtime_option': "",
-        }
-
-        logger.error('---ndp/stop: send %s request to cc=%s nc=%s' % (operation, runtime_option['ccip'], runtime_option['ncip']))
-        r = requests.post(url, data=payload)
+            if insid.find("TVD") == 0 or insid.find('VD') == 0:
+                url = 'http://%s/cc/api/1.0/task/delete' % runtime_option['ccip']
+            if insid.find('PVD') == 0 or insid.find('VS') == 0:
+                url = 'http://%s/cc/api/1.0/image/create/task/stop' % runtime_option['ccip']
+            logger.error("111111")
+            # # send request to CC to work
+            payload = {
+                'tid': "%s:%s:%s" % (insid, insid, insid),
+                'ncip': runtime_option['ncip'],
+                'runtime_option': "",
+            }
+            logger.error('---ndp/stop: send request %s to cc=%s nc=%s' % (url, runtime_option['ccip'], runtime_option['ncip']))
+            r = requests.post(url, data=payload)
+            logger.error('22222222')
+        except Exception as e:
+            logger.error('---ndp/stop: image_ndp_stop AGAIN get exception = %s ' % str(e))
 
         response = {}
         response['Result'] = 'OK'

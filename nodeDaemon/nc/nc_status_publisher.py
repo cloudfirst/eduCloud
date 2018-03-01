@@ -3,7 +3,7 @@ from luhyaapi.hostTools import *
 from luhyaapi.rabbitmqWrapper import *
 from luhyaapi.vboxWrapper import *
 from luhyaapi.settings import *
-import time, psutil, requests, os
+import time, psutil, requests, os, memcache
 
 logger = getncdaemonlogger()
 
@@ -34,27 +34,33 @@ class nc_statusPublisher():
     def job30seconds(self):
         logger.error("start job30seconds")
 
-        avail_vm_lsit = getVMlist()
-        for avm in avail_vm_lsit:
-            if avm['state'] == 'Running':
-                self._new_running_vms.append(avm['insid'])
-        terminated_vms = self.find_terminated_vms()
-        logger.error("old running vms = %s" % json.dumps(self._old_running_vms))
-        logger.error("new running vms = %s" % json.dumps(self._new_running_vms))
+        vms = os.listdir('/storage/VMs/')
+        terminated_vms = getNotRunningVMs(vms)
         logger.error("terminated  vms = %s" % json.dumps(terminated_vms))
+        mc = memcache.Client(['127.0.0.1:11211'], debug=0)
         for tvm in terminated_vms:
-            message = {}
-            message['type']             = "cmd"
-            message['op']               = 'ndp/stop'
-            message['tid']              = tvm
-            message['runtime_option']   = ""
+            is_really_stopped = False
+            try:
+                key = "nc_startvm#" + str(tvm)
+                payload = mc.get(key)
+                logger.error("retrieve data from memcache as %s - %s" % (key, payload))
+                if payload == None:
+                    logger.error("find %s is indeed terminated already" % tvm)
+                    is_really_stopped = True
+                else:
+                    logger.error("find %s is still booting" % tvm)
+                    is_really_stopped = False
+            except Exception as e:
+                is_really_stopped = True
 
-            _message = json.dumps(message)
-            zmq_send("127.0.0.1", _message, NC_CMD_QUEUE_PORT)
-            logger.error("RDP: find %s is terminated already" % tvm)
-
-        self._old_running_vms = self._new_running_vms
-        self._new_running_vms = []
+            if is_really_stopped == True :
+                message = {}
+                message['type']             = "cmd"
+                message['op']               = 'ndp/stop'
+                message['tid']              = tvm
+                message['runtime_option']   = ""
+                _message = json.dumps(message)
+                zmq_send("127.0.0.1", _message, NC_CMD_QUEUE_PORT)
 
     # every 5 minutes：
     #  - /var/log/educloud/*.log  chown luhya:luhya
@@ -65,12 +71,12 @@ class nc_statusPublisher():
     #  - send ndp stop message to cc to clc
     def run(self):
         index = 0
+        self.job30seconds()
         self.job5minuts()
         while True:
             time.sleep(30)
             index += 1
-            if not isNDPed():
-                self.job30seconds()
+            self.job30seconds()
             if index == 9:
                 index = 0
                 self.job5minuts()

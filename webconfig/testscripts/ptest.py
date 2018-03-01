@@ -4,7 +4,7 @@ import multiprocessing
 
 #logger = getncdaemonlogger()
 my_pboot_delay = 100
-my_semaphores = multiprocessing.Semaphore(4)
+my_semaphores = multiprocessing.Semaphore(3)
 
 def getlogdatetime():
     return time.strftime("%d/%m/%Y") + " " + time.strftime("%H:%M:%S")
@@ -17,11 +17,12 @@ class runImageTaskThread(multiprocessing.Process):
 
     def RandomSleep(self, start, end):
         seconds = random.randint(start, end)
-        print "process %d will sleep %d seconds" % (self.index, seconds)
+        #print "process %d will sleep %d seconds" % (self.index, seconds)
         time.sleep(seconds)
 
     def run(self):
         with my_semaphores:
+            print "get " + str(self.index) + str(my_semaphores)
             print("process %d start " %  self.index)
             self.RandomSleep(1,10)
 
@@ -29,6 +30,7 @@ class runImageTaskThread(multiprocessing.Process):
             #print "%s process %d RunVM for %d-%d seconds" % (getlogdatetime(), self.index, 60, 60 * 3)
             #self.RandomSleep(1, 10)
             print "process %d stop" % (self.index)
+        print "release " + str(self.index) + str(my_semaphores)
 
 if __name__ == '__main__':
     for i in range(1,6):
