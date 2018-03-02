@@ -203,12 +203,15 @@ def main(argv):
 
     ###################################################
     # for all valid account, asisgen a proces to
+    list_of_process = []
     for vw in list_of_vmWorkers:
         if vw.logon():
             worker = autoWorkerProcess(vw, int(message['retry']))
             worker.start()
+            list_of_process.append(worker)
 
-    time.sleep(60*60)
+    for w in list_of_process:
+        w.join()
 
 if __name__ == '__main__':
     main(sys.argv[1:])

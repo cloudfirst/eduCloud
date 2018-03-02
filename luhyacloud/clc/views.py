@@ -6309,24 +6309,6 @@ def vm_afterboot(request):
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
 
-from django.conf import global_settings
-def set_django_debug(request):
-    response = {}
-    response['msg'] = "DEBUG and TEMPLATE_DEBUG is enabled"
-    response['Result'] = "OK"
-    retvalue = json.dumps(response)
-    return HttpResponse(retvalue, content_type="application/json")
-
-def get_django_debug(request):
-    response = {}
-    response['Result'] = "OK"
-    if global_settings.DEBUG== False:
-        response['ret'] = "no"
-    else:
-        response['ret'] = "yes"
-    retvalue = json.dumps(response)
-    return HttpResponse(retvalue, content_type="application/json")
-
 def task_status_update(request):
     taskstatus = request.POST['taskstatus']
     json_msg = json.loads(taskstatus)

@@ -768,7 +768,6 @@ class runImageTaskThread(multiprocessing.Process):
             return self.kvm_createVM()
 
     def vbox_runVM(self):
-        logger.error("--- --- --- enter vbox_runVM")
         flag = True
         payload = {
             'type'      : 'taskstatus',
@@ -783,7 +782,7 @@ class runImageTaskThread(multiprocessing.Process):
 
         try:
             if not vboxmgr.isVMRunning():
-                logger.error("--- --- --- vboxmgr is not running")
+                logger.error("vbox_runVM: %s is not running" % self.tid)
                 # every time before running, take a NEW snapshot
                 snapshot_name = "thomas"
                 if self.runtime_option['run_with_snapshot'] == 1:
@@ -823,19 +822,18 @@ class runImageTaskThread(multiprocessing.Process):
                         else:
                             ret = vboxmgr.restore_snapshot(snapshot_name)
 
-                logger.error("--- --- --- check whether it is LNC")
+                logger.error("vbox_runVM:  check whether it is LNC")
                 if isLNC():
                     headless = False
                 else:
                     headless = True
 
                 if self.runtime_option['protocol'] == 'NDP':
-                    logger.error("--- --- --- vboxmgr.ndp_runVM %s %s " % (self.runtime_option['rdp_ip'], self.runtime_option['rdp_port']))
-                    ret = vboxmgr.ndp_runVM(self.runtime_option['rdp_ip'], self.runtime_option['rdp_port'])
+                    logger.error("vbox_runVM: ndp_runVM %s %s " % (self.runtime_option['rdp_ip'], self.runtime_option['rdp_port']))
+                    vboxmgr.ndp_runVM(self.runtime_option['rdp_ip'], self.runtime_option['rdp_port'])
                 else:
-                    ret = vboxmgr.runVM(headless)
-
-                logger.error("--- --- --- vboxmgr.runVM, error=%s" % ret)
+                    logger.error("vbox_runVM: vbox_runVM")
+                    vboxmgr.runVM(headless)
             else:
                 logger.error("--- --- --- vboxmgr.SendCAD b")
                 vboxmgr.SendCAD()
@@ -894,7 +892,6 @@ class StopImageTaskThread(multiprocessing.Process):
     def run(self):
         process_stop_cmd(self.tid, self.runtime_option)
 
-
 class DeleteImageTaskThread(multiprocessing.Process):
     def __init__(self, tid, runtime_option):
         multiprocessing.Process.__init__(self)
@@ -905,6 +902,7 @@ class DeleteImageTaskThread(multiprocessing.Process):
             logger.error("DeleteImageTaskThread load runtime_option=%s error" % runtime_option)
             self.runtime_option =''
 
+    def run(self):
         process_delete_cmd(self.tid, self.runtime_option)
         # need to update nc's status at once
         update_nc_running_status()
@@ -1164,6 +1162,7 @@ class nc_cmdConsumer():
         try:
             message = json.loads(body)
             if message.has_key('op') and message['op'] in  nc_cmd_handlers and nc_cmd_handlers[message['op']] != None:
+                logger.error("doing nc_cmdConsumer.cmdHandle at %s" % str(nc_cmd_handlers[message['op']]))
                 nc_cmd_handlers[message['op']](message['tid'], message['runtime_option'])
             else:
                 logger.error("zmq: nc get unknown cmd : %s", body)

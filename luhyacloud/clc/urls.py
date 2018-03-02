@@ -265,9 +265,6 @@ urlpatterns = patterns('',
     url(r'^api/1.0/prv_data/op/(?P<uid>\w+)$',     views.prv_data_operation,              name='prv_data_operation'),
     url(r'^api/1.0/vrde$',     views.rdp_web_client,              name='rdp_web_client'),
 
-    url(r'^api/1.0/set_django_debug$',      views.set_django_debug,           name='set_django_debug'),
-    url(r'^api/1.0/get_django_debug$',      views.get_django_debug,           name='get_django_debug'),
-
     url(r'^api/1.0/set_log_level$',         views.set_log_level,              name='set_log_level'),
 
     url(r'^task/status/update$',        views.task_status_update,                 name='task_status_update'),

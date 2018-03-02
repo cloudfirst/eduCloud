@@ -230,12 +230,10 @@ class vboxWrapper():
 
     def ndp_runVM(self, hostIP, hostPort):
         vm_name = self._tool._vmname
-        cmd_line = "ndpcmd add %s %s %s" % (vm_name, hostIP, str(hostPort))
-        ret = commands.getoutput(cmd_line)
+        cmd_line = "/usr/ndp/server/NDPServer %s %s %s " % (vm_name, hostIP, str(hostPort))
+        # cmd_line = "ndpcmd add %s %s %s" % (vm_name, hostIP, str(hostPort))
+        p = subprocess.Popen(cmd_line, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         logger.error("cmd = %s" % cmd_line)
-        logger.error("result = %s" % ret)
-
-        return ret
 
     def runVM(self, headless):
         vm_name = self._tool._vmname
