@@ -330,22 +330,24 @@ def getPhyServerStatusFromMC(stype, mac):
     payload = None
     mc = memcache.Client(['127.0.0.1:11211'], debug=0)
     key = str('%s#%s#status' % (stype, mac))
-    try_times = 5
-    while (try_times > 0):
+    try_times = 0
+    flag = False
+    while (try_times < 100 and not flag ):
         try:
             payload = mc.get(key)
             if payload == None:
-                logger.error('--- getPhyServerStatusFromMC: paylod == None')
+                logger.error('--- getPhyServerStatusFromMC: paylod = None, retry=%d' % try_times)
             else:
                 payload = json.loads(payload)
                 payload = payload['hardware_data']
-                break
+                flag = True
         except Exception as e:
             logger.error("--- getPhyServerStatusFromMC error = %s" % str(e))
 
-        time.sleep(1)
-        try_times -= 1
+        time.sleep(3)
+        try_times += 1
 
+    logger.error("--- getPhyServerStatusFromMC: exit with flag=%s retry times=%d payload=%s" % (flag, try_times, payload))
     return payload
 
 def get_nc_avail_res(nc_mac):
@@ -360,7 +362,7 @@ def get_nc_avail_res(nc_mac):
     computed_avail_res = {}
 
     final_avail_res    = {
-        '1mem'       : 0,
+        '1mem'       : -1,
         '2cpu_usage' : 0,
         '3disk'      : 0,
         '4cpu'       : 0,
@@ -376,27 +378,35 @@ def get_nc_avail_res(nc_mac):
         total_res['disk']               = data['disk']
 
         final_avail_res['2cpu_usage']    = 100 - data['cpu_usage']
+        logger.error("get_nc_avail_res() %s - final_avail_res['2cpu_usage']=%d" % (nc_mac, final_avail_res['2cpu_usage']))
+
         final_avail_res['3disk']         = data['disk'] * (1 - data['disk_usage'] / 100.0)
+        logger.error("get_nc_avail_res() %s - final_avail_res['3disk']=%d" % (nc_mac, final_avail_res['3disk']))
 
         reported_avail_res['mem'] = data['mem']  * (1 - data['mem_usage']  / 100.0)
 
         # get allocate but not used yet res
         ncobj = ecServers.objects.get(mac0=nc_mac, role='nc')
-        trecs = ectaskTransaction.objects.filter(ncip = ncobj.ip0)
-        if trecs.count() > 0:
-            for trec in trecs:
-                try:
-                    runtime_option = json.loads(trec.runtime_option)
-                    used_res['cpu']  += runtime_option['cpus']
-                    used_res['mem']  += runtime_option['memory']
-                except Exception as e:
-                    logger.error('get_nc_avail_res: %s runtime_optio invalid = %s' % (trec.tid, trec.runtime_option))
 
+        # trecs = ectaskTransaction.objects.filter(ncip = ncobj.ip0)
+        # if trecs.count() > 0:
+        #     for trec in trecs:
+        #         try:
+        #             runtime_option = json.loads(trec.runtime_option)
+        #             used_res['cpu']  += runtime_option['cpus']
+        #             used_res['mem']  += runtime_option['memory']
+        #         except Exception as e:
+        #             logger.error('get_nc_avail_res() get_nc_avail_res Exception: %s - %s - %s' % (trec.tid, trec.runtime_option, str(e)))
+
+        logger.error("get_nc_avail_res() %s - final_avail_res: used_res.mem = %d" % (nc_mac, used_res['mem']))
         computed_avail_res['cpu']   = total_res['cpu']  - used_res['cpu']
         computed_avail_res['mem']   = total_res['mem']  - used_res['mem']
 
         final_avail_res['4cpu'] = computed_avail_res['cpu']
+        logger.error("get_nc_avail_res() %s - final_avail_res['4cpu']=%d" % (nc_mac, final_avail_res['4cpu']))
         final_avail_res['1mem'] = min(computed_avail_res['mem'], reported_avail_res['mem'])
+        logger.error("get_nc_avail_res() %s - final_avail_res: computed_avail_res.mem=%d reported_avail_res.mem=%d" % (nc_mac, computed_avail_res['mem'], reported_avail_res['mem']))
+        logger.error("get_nc_avail_res() %s - final_avail_res['1mem']=%d" % (nc_mac, final_avail_res['1mem']))
 
     return final_avail_res
 
@@ -2708,7 +2718,6 @@ def image_ndp_stop(request):
                 url = 'http://%s/cc/api/1.0/task/delete' % runtime_option['ccip']
             if insid.find('PVD') == 0 or insid.find('VS') == 0:
                 url = 'http://%s/cc/api/1.0/image/create/task/stop' % runtime_option['ccip']
-            logger.error("111111")
             # # send request to CC to work
             payload = {
                 'tid': "%s:%s:%s" % (insid, insid, insid),
@@ -2717,7 +2726,6 @@ def image_ndp_stop(request):
             }
             logger.error('---ndp/stop: send request %s to cc=%s nc=%s' % (url, runtime_option['ccip'], runtime_option['ncip']))
             r = requests.post(url, data=payload)
-            logger.error('22222222')
         except Exception as e:
             logger.error('---ndp/stop: image_ndp_stop AGAIN get exception = %s ' % str(e))
 

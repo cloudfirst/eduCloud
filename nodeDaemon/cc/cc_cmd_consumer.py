@@ -38,10 +38,12 @@ def cc_handle_task_status_update(message):
             if r.status_code == 200:
                 flag = True
             else:
+                tmpfilename = "/tmp/%s.html" % taskstatus['insid']
+                with open(tmpfilename, "w") as myfile:
+                     myfile.write(r.content)
                 retry = retry + 1
                 time.sleep(5)
             logger.error("cc_handle_task_status_update url=%s with status code=%d and payload=%s" % (url, r.status_code, json.dumps(payload, indent=4)))
-            logger.error("cc_handle_task_status_update r.content=%s" % r.content)
         except Exception as e:
             logger.error("cc_handle_task_status_update try %d time and get exception = %s" % (retry, str(e)))
 

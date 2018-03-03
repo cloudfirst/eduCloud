@@ -96,7 +96,14 @@ class cloudDesktopWrapper():
             'sid': self.sessionID,
         }
         r = self.session.post(url, data=payload)
-        result = json.loads(r.content)
+        if r.status_code == 200:
+            result = json.loads(r.content)
+        else:
+            with open("/tmp/"+ self.user_id + "." + vmdata['ecid'] + ".html", "w") as myfile:
+                 myfile.write(r.content)
+            result = {}
+            result['Result'] = "FAIL"
+            result['error']  = "HTTP error = %s" %  r.status_code
         return result
 
     def _parseTID(self, tid):
@@ -119,7 +126,14 @@ class cloudDesktopWrapper():
             'sid': self.sessionID,
         }
         r = self.session.post(url, data=payload)
-        result = json.loads(r.content)
+        if r.status_code == 200:
+            result = json.loads(r.content)
+        else:
+            with open("/tmp/"+ self.user_id + "." + insid + ".html", "w") as myfile:
+                 myfile.write(r.content)
+            result = {}
+            result['Result'] = "FAIL"
+            result['error']  = "HTTP error = %s" %  r.status_code
         return result
 
     def startVM(self, vmdata):
@@ -143,7 +157,14 @@ class cloudDesktopWrapper():
             'sid': self.sessionID,
         }
         r = self.session.post(url, data=payload)
-        result = json.loads(r.content)
+        if r.status_code == 200:
+            result = json.loads(r.content)
+        else:
+            with open("/tmp/"+ self.user_id + "." + insid  + ".html", "w") as myfile:
+                 myfile.write(r.content)
+            result = {}
+            result['Result'] = "FAIL"
+            result['error']  = "HTTP error = %s" %  r.status_code
         return result
 
 
@@ -163,7 +184,14 @@ class cloudDesktopWrapper():
             'sid': self.sessionID,
         }
         r = self.session.post(url, data=payload)
-        result = json.loads(r.content)
+        if r.status_code == 200:
+            result = json.loads(r.content)
+        else:
+            with open("/tmp/"+ self.user_id + "." + insid  + ".html", "w") as myfile:
+                 myfile.write(r.content)
+            result = {}
+            result['Result'] = "FAIL"
+            result['error']  = "HTTP error = %s" %  r.status_code
         return result
 
     ###########################################################
@@ -186,7 +214,14 @@ class cloudDesktopWrapper():
 
         url = 'http://%s:%s/%s/%s/%s/%s' % (self.host_ip,  self.host_port, self.progress_url, srcid, dstid, insid)
         r = self.session.post(url)
-        result = json.loads(r.content)
+        if r.status_code == 200:
+            result = json.loads(r.content)
+        else:
+            with open("/tmp/"+ self.user_id + "." + insid  + ".html", "w") as myfile:
+                 myfile.write(r.content)
+            result = {}
+            result['Result'] = "FAIL"
+            result['error']  = "HTTP error = %s" %  r.status_code
         return result
 
     ###########################################################
@@ -204,7 +239,14 @@ class cloudDesktopWrapper():
             'sid': self.sessionID,
         }
         r = self.session.post(url, data=payload)
-        result = json.loads(r.content)
+        if r.status_code == 200:
+            result = json.loads(r.content)
+        else:
+            with open("/tmp/"+ self.user_id + "." + insid  + ".html", "w") as myfile:
+                 myfile.write(r.content)
+            result = {}
+            result['Result'] = "FAIL"
+            result['error']  = "HTTP error = %s" %  r.status_code
         return result
 
     ###########################################################
@@ -224,7 +266,14 @@ class cloudDesktopWrapper():
 
         url = 'http://%s:%s/%s/%s/%s/%s' % (self.host_ip,  self.host_port, self.vmstatus_url, srcid, dstid, insid)
         r = self.session.post(url)
-        result = json.loads(r.content)
+        if r.status_code == 200:
+            result = json.loads(r.content)
+        else:
+            with open("/tmp/"+ self.user_id + "." + insid  + ".html", "w") as myfile:
+                 myfile.write(r.content)
+            result = {}
+            result['Result'] = "FAIL"
+            result['error']  = "HTTP error = %s" %  r.status_code
         return result
 
     ###########################################################
@@ -253,7 +302,14 @@ class cloudDesktopWrapper():
             'tid': tid,
         }
         r = self.session.post(url, data=payload)
-        result = (r.content)
+        if r.status_code == 200:
+            result = json.loads(r.content)
+        else:
+            with open("/tmp/"+ self.user_id + "." + insid  + ".html", "w") as myfile:
+                 myfile.write(r.content)
+            result = {}
+            result['Result'] = "FAIL"
+            result['error']  = "HTTP error = %s" %  r.status_code
         return json.loads(result)
 
     def errorHandle(self, vmdata):

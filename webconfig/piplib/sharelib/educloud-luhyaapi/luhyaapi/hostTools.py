@@ -200,9 +200,15 @@ def getHostNetInfo():
 
 import random
 def genHexRandom():
-    ret = "%8x" % random.randint(0x0, 0xFFFFFFFF)
-    if ret[0] == ' ':
+    retry = 0
+    flag = False
+    while retry < 10 and not flag:
         ret = "%8x" % random.randint(0x0, 0xFFFFFFFF)
+        if ret[0] == ' ':
+            retry += 1
+            continue
+        else:
+            flag = True
     return ret
 
 # network resouce allocation method
