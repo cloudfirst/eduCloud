@@ -46,6 +46,8 @@ def cc_handle_task_status_update(message):
             logger.error("cc_handle_task_status_update url=%s with status code=%d and payload=%s" % (url, r.status_code, json.dumps(payload, indent=4)))
         except Exception as e:
             logger.error("cc_handle_task_status_update try %d time and get exception = %s" % (retry, str(e)))
+            retry = retry + 1
+            time.sleep(5)
 
     if flag == False:
         logger.error("safe_update_task_status retry %d time and failed to update task status." % retry)

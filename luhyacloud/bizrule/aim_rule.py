@@ -91,8 +91,9 @@ class aimActions(BaseActions):
     })
     def set_calc_ip(self, prefix, mask, gateway, dns, express, reboot):
         import re
-        acc_no = re.findall("\d+", self.user["user_id"])[0]
-        acc_no = int(acc_no)
+        tmp = re.findall("\d+", self.user["user_id"])
+        tlen = len(tmp)
+        acc_no = int(tmp[tlen - 1])
         acc_no = eval(express)(acc_no)
         self.vm["ip"]       = prefix + "." + str(acc_no)
         self.vm["mask"]     = mask
@@ -100,7 +101,7 @@ class aimActions(BaseActions):
         self.vm["dns"]      = dns
         self.vm["mac"]      = randomMAC()
         self.vm["reboot"]   = reboot.lower()
-        logger.error("set_calc_ip reboot = %s" % self.vm["reboot"])
+        logger.error("set_calc_ip result= %s" % json.dumps(self.vm, indent=4))
 
 def aim_get_rules():
     recs = bizRule.objects.filter(rule_name="aim")

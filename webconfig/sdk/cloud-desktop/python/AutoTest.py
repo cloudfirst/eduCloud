@@ -213,5 +213,11 @@ def main(argv):
     for w in list_of_process:
         w.join()
 
+    for w in list_of_vmWorkers:
+        vmdata = {
+            'tid': w.tid
+        }
+        w.delet_vm(vmdata)
+
 if __name__ == '__main__':
     main(sys.argv[1:])

@@ -10,6 +10,7 @@ class cloudDesktopWrapper():
         self.user_password  = ''
         self.host_ip        = ''
         self.host_port      = 80
+        self.tid            = ''
 
         self.login_url       = "clc/api/1.0/user_login"
         self.list_vm         = "clc/api/1.0/list_myvds"
@@ -98,6 +99,7 @@ class cloudDesktopWrapper():
         r = self.session.post(url, data=payload)
         if r.status_code == 200:
             result = json.loads(r.content)
+            self.tid = result['tid']
         else:
             with open("/tmp/"+ self.user_id + "." + vmdata['ecid'] + ".html", "w") as myfile:
                  myfile.write(r.content)
@@ -119,6 +121,7 @@ class cloudDesktopWrapper():
     ###########################################################
     def _start_tvd(self, vmdata):
         tid = vmdata['tid']
+        self.tid = vmdata['tid']
         srcid, dstid, insid = self._parseTID(tid)
 
         url = 'http://%s:%s/%s/%s/%s/%s' % (self.host_ip,  self.host_port, self.start_url, srcid, dstid, insid)

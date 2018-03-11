@@ -14,6 +14,7 @@ import random, pickle, pexpect, os, base64, shutil, time, datetime
 import logging
 import commands
 from datetime import datetime
+import multiprocessing
 
 from models import *
 
@@ -28,6 +29,7 @@ import requests, memcache
 from django.utils.translation import ugettext as _
 
 logger = getclclogger()
+my_semaphores = multiprocessing.Semaphore(1)
 
 CC_DETAIL_TEMPLATE = \
 '<div class="col-lg-6">' + \
@@ -2000,17 +2002,19 @@ def releaseRuntimeOptionForImageBuild(_tid, _runtime_option=None):
 
     # release CC Resource
     # 1. rdp port
-    if 'rdp_port' in runtime_option.keys() and runtime_option['rdp_port']  != '':
-        logger.error('release rdp port %s' % runtime_option['rdp_port'])
-        available_rdp_port = json.loads(ccres_info.rdp_port_pool_list)
-        used_rdp_ports     = json.loads(ccres_info.used_rdp_ports)
+    with my_semaphores:
+        ccres_info  = ecCCResources.objects.get(ccmac0=ccobj.mac0)
+        if 'rdp_port' in runtime_option.keys() and runtime_option['rdp_port']  != '':
+            logger.error('release rdp port %s' % runtime_option['rdp_port'])
+            available_rdp_port = json.loads(ccres_info.rdp_port_pool_list)
+            used_rdp_ports     = json.loads(ccres_info.used_rdp_ports)
 
-        available_rdp_port, used_rdp_ports = free_rdp_port(available_rdp_port, used_rdp_ports, runtime_option['rdp_port'])
+            available_rdp_port, used_rdp_ports = free_rdp_port(available_rdp_port, used_rdp_ports, runtime_option['rdp_port'])
 
-        ccres_info.rdp_port_pool_list   = json.dumps(available_rdp_port)
-        ccres_info.used_rdp_ports       = json.dumps(used_rdp_ports)
+            ccres_info.rdp_port_pool_list   = json.dumps(available_rdp_port)
+            ccres_info.used_rdp_ports       = json.dumps(used_rdp_ports)
 
-        ccres_info.save()
+            ccres_info.save()
 
     # 2. release web_ip
     if 'web_ip' in runtime_option.keys() and \
@@ -2242,7 +2246,6 @@ def genRuntimeOptionForImageBuild(transid):
         user_vdpara = {}
 
     ccobj       = ecServers.objects.get(ip0=ccip, role='cc')
-    ccres_info  = ecCCResources.objects.get(ccmac0=ccobj.mac0)
     ncobj       = ecServers.objects.get(ip0=ncip, role='nc')
 
     # 0. get vm access protocol
@@ -2278,23 +2281,29 @@ def genRuntimeOptionForImageBuild(transid):
         runtime_option['cpus']      = insobj.cpus
     logger.error('allocate memory  %sG for %s' % (runtime_option['memory'], transid))
 
-    # 3 network option
-    networkMode = ccres_info.network_mode
+    logger.error("genRuntimeOptionForImageBuild: prepare to allocate rdp port for %s with %s" % (ins_id, str(my_semaphores)))
+    with my_semaphores:
+        logger.error("genRuntimeOptionForImageBuild: start to allocate rdp port for %s with %s" % (ins_id, str(my_semaphores)))
+        # 3 network option
+        ccres_info  = ecCCResources.objects.get(ccmac0=ccobj.mac0)
+        networkMode = ccres_info.network_mode
 
-    # 3.1 allocate rpd port
-    available_rdp_port = json.loads(ccres_info.rdp_port_pool_list)
-    used_rdp_ports     = json.loads(ccres_info.used_rdp_ports)
+        # 3.1 allocate rpd port
+        available_rdp_port = json.loads(ccres_info.rdp_port_pool_list)
+        used_rdp_ports     = json.loads(ccres_info.used_rdp_ports)
 
-    available_rdp_port, used_rdp_ports, newport = allocate_rdp_port(available_rdp_port, used_rdp_ports)
-    if newport == None:
-        runtime_option['rdp_port']  = ''
-        return None, _('Need more rdp port resources!.')
-    else:
-        runtime_option['rdp_port']                  = newport
-        logger.error('allocate rdp port %s for %s' % (newport, transid))
+        available_rdp_port, used_rdp_ports, newport = allocate_rdp_port(available_rdp_port, used_rdp_ports)
+        if newport == None:
+            runtime_option['rdp_port']  = ''
+            return None, _('Need more rdp port resources!.')
+        else:
+            runtime_option['rdp_port']                  = newport
+            logger.error('genRuntimeOptionForImageBuild: allocate rdp port %s for %s' % (newport, transid))
 
-    ccres_info.rdp_port_pool_list   = json.dumps(available_rdp_port)
-    ccres_info.used_rdp_ports       = json.dumps(used_rdp_ports)
+        ccres_info.rdp_port_pool_list   = json.dumps(available_rdp_port)
+        ccres_info.used_rdp_ports       = json.dumps(used_rdp_ports)
+
+        ccres_info.save()
 
     # 3.2 set netcard in vm
     networkcards = []
@@ -5319,7 +5328,7 @@ def add_new_server(request):
             cc_usage            = "rvd",
 
             rdp_port_pool_def   = "3400-3499",
-            rdp_port_pool_list  = json.dumps(SortedList(range(3389,4389)).as_list()),
+            rdp_port_pool_list  = json.dumps(SortedList(range(3400,3499)).as_list()),
             used_rdp_ports      = json.dumps([]),
 
             network_mode        = 'flat',

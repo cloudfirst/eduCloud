@@ -63,8 +63,9 @@ if not os.path.exists(fileflag):
         payload = {
             'mac' : mac.lower()
         }
-        while True:
-            time.sleep(1)
+        flag = False
+        while not flag: 
+            time.sleep(2)
             luhya_debug_logger.error('send request to clc with mac=%s' % mac.lower())
             try:
                 r = requests.post(clc_request_url, data=payload)
@@ -90,6 +91,7 @@ if not os.path.exists(fileflag):
                         luhya_debug_logger.error('run %s' % res['filename'])
                         hc = __import__(mn)
                         hc.changeHost(luhya_debug_logger)
+                    flag = True
                     break
                 else:
                     luhya_debug_logger.error('request status code is NOT 200, try again ... ...')
