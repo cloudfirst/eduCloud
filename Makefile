@@ -24,13 +24,13 @@ build:
 	echo "now is building educloud debian packages ... ... "
 clean:
 	echo "now is cleaning educloud debian packages ... ... "
-	rm -fr $(EDU_CORE) $(EDU_WEBBASE) $(WEB_PORTAL) $(WEB_CLC) $(WEB_WALRUS) $(WEB_CC) $(WEB_VIRTAPP) $(WEB_BIZRULE)
-	rm -fr $(DAEMON_CLC) $(DAEMON_WALRUS) $(DAEMON_CC) $(DAEMON_NC)
-	rm debian/*.debhelper.log debian/*.substvars  debian/files debian/stamp* debian/compat
-	find ./nodeDaemon -name *.spec -delete
-	rm webconfig/serverTools/recoverVMfromCrash.spec
-	rm webconfig/piplib/3rd/luhyaapi-*.tar.gz
-	rm ../*.deb ../pip.tar
+	rm -fr $(EDU_CORE) $(EDU_WEBBASE) $(WEB_PORTAL) $(WEB_CLC) $(WEB_WALRUS) $(WEB_CC) $(WEB_VIRTAPP) $(WEB_BIZRULE) || true
+	rm -fr $(DAEMON_CLC) $(DAEMON_WALRUS) $(DAEMON_CC) $(DAEMON_NC) || true
+	rm debian/*.debhelper.log debian/*.substvars  debian/files debian/stamp* debian/compat || true
+	find ./nodeDaemon -name *.spec -delete || true
+	rm webconfig/serverTools/recoverVMfromCrash.spec || true
+	rm webconfig/piplib/3rd/luhyaapi-*.tar.gz || true
+	rm ../*.deb ../pip.tar || true
 publish:
 	rm $(CURDIR)/../AutoITManagement/playbook/roles/allinone-ndp/files/educloud*.deb || true
 	rm $(CURDIR)/../AutoITManagement/playbook/roles/allinone-ndp/files/nodedaemon*.deb || true

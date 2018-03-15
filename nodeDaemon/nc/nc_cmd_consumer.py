@@ -974,6 +974,7 @@ def process_stop_cmd(tid, runtime_option):
                 cmd = VBOX_MGR_CMD + " controlvm %s poweroff " % insid
             out = commands.getoutput(cmd)
             logger.error("Step 1 of 2: cmd=%s; result=%s" % (cmd, out))
+            time.sleep(2)
         payload = {
                 'type'      : 'taskstatus',
                 'phase'     : "editing",
