@@ -1,9 +1,10 @@
-#!/usr/bin/python
+#! /usr/bin/python
 
 import os, commands, sys, getopt
 import time, random
 import multiprocessing
 from client_sdk import *
+from vmslog import *
 
 #################################################################################
 # This script will simulate multiple user to initiate the VM instance
@@ -17,43 +18,43 @@ from client_sdk import *
 # before run this script, make sure
 # - create enough number of account by using batch account creation feature.
 # usage :
-#       AutoTest -h serverIP  -a account_prefix -n number_of_account -p password
+#       startvms -h serverIP  -a account_prefix -p password -n number_of_account
 
 # for example,
-#       AutoTest -h 192.168.0.199 -a auto -n 9 -p auto
-# means that there are 9 existing account named from auto0 to auto8, and same passwrod
+#       startvms -h 192.168.0.199 -a auto -n 9 -p auto
+# means that there are 9 existing account named from auto1 to auto9, and same passwrod
 # "auto" for all of these accounts.
 
+logger = getautologger()
 
 def getlogdatetime():
     return time.strftime("%d/%m/%Y") + " " + time.strftime("%H:%M:%S")
 
 def ndp_connect(ip, port):
     cmd = '/usr/bin/ndpclient -h ' + ip + ' -p ' + str(port)
-    #commands.getoutput(cmd)
+    commands.getoutput(cmd)
 
 class autoWorkerProcess(multiprocessing.Process):
-    def __init__(self, vmWorker, retry_times):
+    def __init__(self, vmWorker):
         multiprocessing.Process.__init__(self)
 
-        self.retry_times = retry_times
         self.vmw = vmWorker
         self.vmobj = None
 
     def stopWork(self):
-        print "%s process exit." % self.vmobj['tid']
+        logger.error( "%s process exit." % self.vmobj['tid'] )
         quit()
 
     def RandomSleep(self, start, end):
         seconds = random.randint(start, end)
-        print "Now will sleep %d seconds" % seconds
+        logger.error("Now will sleep %d seconds" % seconds)
         time.sleep(seconds)
 
     def getCurrentVM(self):
         ret = None
         list_vms = self.vmw.getVDList()
         if len(list_vms['data']) <= 0:
-            print "no vm available for %s, now quit." % self.vmw.user_id
+            logger.error( "no vm available for %s, now quit." % self.vmw.user_id )
             self.stopWork()
         else:
             self.vmobj = list_vms['data'][0]
@@ -61,14 +62,14 @@ class autoWorkerProcess(multiprocessing.Process):
     def delete_vm(self):
         if len(self.vmobj['tid']) > 0 :
             if self.vmobj['state'] == "Running" or self.vmobj['state'] == "running":
-                print "%s %s clean existing VM" % (getlogdatetime(), self.vmw.user_id)
+                logger.error( "%s clean existing VM" % (self.vmw.user_id))
                 self.vmw.delet_vm(self.vmobj)
                 self.getCurrentVM()
 
     def start_vm(self):
         ret = self.vmw.startVM(self.vmobj)
         if ret['Result'] == 'FAIL':
-            print "%s %s StartVM failed %s" % (getlogdatetime(), self.vmw.user_id, ret['error'])
+            logger.error( "%s StartVM failed %s" % (self.vmw.user_id, ret['error']))
             self.vmw.errorHandle(self.vmobj)
             self.stopWork()
         else:
@@ -77,7 +78,7 @@ class autoWorkerProcess(multiprocessing.Process):
     def prepare_vm(self):
         ret = self.vmw.prepareVM(self.vmobj)
         if ret['Result'] == 'FAIL':
-            print "%s %s PrepareVM failed %s" % (getlogdatetime(), self.vmw.user_id, ret['error'])
+            logger.error( "%s PrepareVM failed %s" % (self.vmw.user_id, ret['error']))
             self.vmw.errorHandle(self.vmobj)
             self.stopWork()
 
@@ -94,15 +95,15 @@ class autoWorkerProcess(multiprocessing.Process):
             retry -= 1
 
         if not flag or retry <= 0:
-            print "%s %s PrepareVM too long, restart it" % (getlogdatetime(), self.vmw.user_id)
+            logger.error( "%s PrepareVM too long, restart it" % (self.vmw.user_id))
             self.vmw.errorHandle(self.vmobj)
             self.stopWork()
 
     def run_vm(self):
-        print "%s %s RunVM Start" % (getlogdatetime(), self.vmw.user_id)
+        logger.error( "%s RunVM Start" % (self.vmw.user_id))
         ret = self.vmw.runVM(self.vmobj)
         if ret['Result'] == 'FAIL':
-            print "%s %s RunVM failed : %s" % (getlogdatetime(), self.vmw.user_id, ret['error'])
+            logger.error("%s RunVM failed : %s" % (self.vmw.user_id, ret['error']))
             self.vmw.errorHandle(self.vmobj)
             self.stopWork()
 
@@ -113,33 +114,19 @@ class autoWorkerProcess(multiprocessing.Process):
         while (not flag and not timer_expired and times >= 0):
             time.sleep(3)
             ret = self.vmw.getVMStatus(self.vmobj)
-            # print 'VM Status is %s' % ret['state']
             if ret['state'] == 'Running' or ret['state'] == 'running':
-                # print 'VM is running, now can display it.'
                 flag = True
             elif ret['state'] == 'stopped':
                 timer_expired = True
             times -= 1
-
-        #if flag:
-            #ret = self.vmw.getRDPUrl(self.vmobj)
-            #if ret['Result'] == 'FAIL':
-            #    print "%s %s Connect failed : %s" % (getlogdatetime(), self.vmw.user_id, ret['error'])
-            #else:
-            #    ndp_connect(ret['rdp_ip'], ret['rdp_port'])
 
         if timer_expired or times <= 0:
             self.vmw.errorHandle(self.vmobj)
             self.stopWork()
 
     def run(self):
-        #for i in range(self.retry_times):
         self.getCurrentVM()
         self.delete_vm()
-
-        # randomly start vm after xx seconds
-        #print "%s %s Wait %d-%d secods to begin loop" % (getlogdatetime(), self.vmw.user_id, 1, 10)
-        #self.RandomSleep(1, 10)
         self.start_vm()
         self.prepare_vm()
         self.get_prepare_progress()
@@ -148,13 +135,12 @@ class autoWorkerProcess(multiprocessing.Process):
 
 def usage():
     print ""
-    print "AutoTest -h serverIP  -u account_prefix -n number_of_account -p password [-r retry_times]"
+    print "startvms -h serverIP  -u account_prefix -n number_of_account -p password"
     print ""
     print " -h serverIP: the only IP address of educloud web server"
     print " -u account prefix, say, account auto0 has prefix auto"
-    print " -n number of account, say, 9 means auto0 to auto8"
+    print " -n number of account, say, 9 means auto1 to auto9"
     print " -p password, all accounts here share same password"
-    print " -r each account will start/stop vm retry_times, default is 1"
     print ""
 
 def main(argv):
@@ -163,10 +149,9 @@ def main(argv):
         return
 
     message = {}
-    message['retry'] = 1
     message['anum']  = -1
     try:
-      opts, args = getopt.getopt(argv,"h:u:n:p:r:")
+      opts, args = getopt.getopt(argv,"h:u:p:r:n:")
       for opt, arg in opts:
           if opt in ( "-h"):
              message['ip'] =  arg
@@ -176,8 +161,6 @@ def main(argv):
              message['anum'] = arg
           if opt in ("-p"):
               message['apw'] = arg
-          if opt in ("-r"):
-              message['retry'] = arg
     except getopt.GetoptError:
         usage()
         return
@@ -194,7 +177,7 @@ def main(argv):
         vmw.setUser(user_id, user_pw)
         list_of_vmWorkers.append(vmw)
     else:
-        for i in range(int(message['anum'])):
+        for i in range(1, int(message['anum']) + 1):
             user_id = message['aprefix'] + str(i)
             vmw = cloudDesktopWrapper()
             vmw.setHost(clc_ip, 80)
@@ -206,18 +189,13 @@ def main(argv):
     list_of_process = []
     for vw in list_of_vmWorkers:
         if vw.logon():
-            worker = autoWorkerProcess(vw, int(message['retry']))
+            worker = autoWorkerProcess(vw)
             worker.start()
             list_of_process.append(worker)
+            time.sleep(1)
 
     for w in list_of_process:
         w.join()
-
-    for w in list_of_vmWorkers:
-        vmdata = {
-            'tid': w.tid
-        }
-        w.delet_vm(vmdata)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

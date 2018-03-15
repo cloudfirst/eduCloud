@@ -180,6 +180,7 @@ class cloudDesktopWrapper():
     ###########################################################
     def prepareVM(self, vmdata):
         tid = vmdata['tid']
+        self.tid = tid
         srcid, dstid, insid = self._parseTID(tid)
 
         url = 'http://%s:%s/%s/%s/%s/%s' % (self.host_ip,  self.host_port, self.prepare_url, srcid, dstid, insid)
@@ -299,6 +300,7 @@ class cloudDesktopWrapper():
 
     def delet_vm(self, vmdata):
         tid = vmdata['tid']
+        srcid, dstid, insid = self._parseTID(tid)
 
         url = 'http://%s:%s/%s' % (self.host_ip,  self.host_port, self.del_vm_url)
         payload = {
@@ -306,14 +308,14 @@ class cloudDesktopWrapper():
         }
         r = self.session.post(url, data=payload)
         if r.status_code == 200:
-            result = json.loads(r.content)
+            return json.loads(r.content)
         else:
             with open("/tmp/"+ self.user_id + "." + insid  + ".html", "w") as myfile:
                  myfile.write(r.content)
             result = {}
             result['Result'] = "FAIL"
             result['error']  = "HTTP error = %s" %  r.status_code
-        return json.loads(result)
+            return result
 
     def errorHandle(self, vmdata):
         pass

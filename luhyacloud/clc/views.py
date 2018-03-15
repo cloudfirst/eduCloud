@@ -334,7 +334,7 @@ def getPhyServerStatusFromMC(stype, mac):
     key = str('%s#%s#status' % (stype, mac))
     try_times = 0
     flag = False
-    while (try_times < 100 and not flag ):
+    while (try_times < 5 and not flag ):
         try:
             payload = mc.get(key)
             if payload == None:
@@ -2407,12 +2407,12 @@ def genRuntimeOptionForImageBuild(transid):
     runtime_option['web_accessURL']     = ''
     runtime_option['ex_web_accessURL']  = ''
     if ccres_info.cc_usage == 'rvd' or runtime_option['usage'] == 'desktop':
-        runtime_option['mgr_accessURL']     = "%s:%s" % (runtime_option['rdp_ip'], runtime_option['rdp_port'])
+        runtime_option['mgr_accessURL']     = "%s:%s" % (runtime_option['ex_ip'], runtime_option['rdp_port'])
         runtime_option['ex_mgr_accessURL']  = "%s:%s" % (runtime_option['ex_ip'],  runtime_option['rdp_port'])
     if ccres_info.cc_usage == 'vs' and runtime_option['usage'] == 'server':
         runtime_option['web_accessURL']     = 'http://%s' % runtime_option['web_ip']
         runtime_option['ex_web_accessURL']  = 'http://%s:%s' % (runtime_option['ex_ip'], runtime_option['web_port'])
-        runtime_option['mgr_accessURL']     = "%s:%s" % (runtime_option['rdp_ip'], runtime_option['rdp_port'])
+        runtime_option['mgr_accessURL']     = "%s:%s" % (runtime_option['ex_ip'], runtime_option['rdp_port'])
         runtime_option['ex_mgr_accessURL']  = "%s:%s" % (runtime_option['ex_ip'],  runtime_option['rdp_port'])
 
     # issuer's property
@@ -6236,7 +6236,7 @@ def rvd_get_rdp_para(request, srcid, dstid, insid):
     if trecs.count() > 0:
         runtime_option = json.loads(trecs[0].runtime_option)
         response['Result']     = 'OK'
-        response['rdp_ip']     = runtime_option['rdp_ip']
+        response['rdp_ip']     = runtime_option['ex_ip']
         response['rdp_port']   = runtime_option['rdp_port']
         response['protocol']   = runtime_option['protocol']
         netcard = runtime_option["networkcards"]
