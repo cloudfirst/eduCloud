@@ -365,7 +365,7 @@ def run_vapp(request):
                 # collect all live instance, and sort
                 for trec in trecs:
                     vm = {}
-                    ncobj = ecServers.objects.get(ip0 = trec.ncip, role='nc')
+                    ncobj = ecServers.objects.get(eip = trec.ncip, role='nc')
                     key = str("nc#" + ncobj.mac0 + "#status")
                     try:
                         payload = mc.get(key)
@@ -412,11 +412,3 @@ def run_vapp(request):
 
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
-
-
-
-
-
-
-
-

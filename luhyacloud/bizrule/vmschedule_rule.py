@@ -121,7 +121,7 @@ def verify_params_in_set_dst(params):
         if nc_def == "any":
             return True, ""
         else:
-            ncs = ecServers.objects.filter(role="nc", ip0=nc_def, ccname=cc_def)
+            ncs = ecServers.objects.filter(role="nc", eip=nc_def, ccname=cc_def)
             if ncs.count() > 0:
                 return True, ""
             else:

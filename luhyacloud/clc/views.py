@@ -446,7 +446,7 @@ def buildVMObjectForAIMRuleEngine(tid):
     vm["ccip"]      = rec.ccip
     vm["ncip"]      = rec.ncip
 
-    rec = ecServers.objects.get(ip0=vm["ccip"], role="cc")
+    rec = ecServers.objects.get(eip=vm["ccip"], role="cc")
     vm["ccname"]    = rec.ccname
 
     return vm
@@ -609,14 +609,14 @@ def findVMRunningResource(request, tid):
             for nc in ncs:
                 if nc.hypervisor == vmrec.hypervisor:
                     final_avail_res = get_nc_avail_res(nc.mac0)
-                    final_avail_res['xncip'] = nc.ip0
-                    final_avail_res['xccip'] = ccobj.ip0
+                    final_avail_res['xncip'] = nc.eip
+                    final_avail_res['xccip'] = ccobj.eip
                     l.add(final_avail_res)
         else:
-            ncobj = ecServers.objects.get(ccname=cc.ccname, ip0=nc_def, role='nc')
+            ncobj = ecServers.objects.get(ccname=cc.ccname, eip=nc_def, role='nc')
             final_avail_res = get_nc_avail_res(ncobj.mac0)
-            final_avail_res['xncip'] = ncobj.ip0
-            final_avail_res['xccip'] = ccobj.ip0
+            final_avail_res['xncip'] = ncobj.eip
+            final_avail_res['xccip'] = ccobj.eip
             l.add(final_avail_res)
             logger.error("final_avail_res = %s" % json.dumps(final_avail_res))
 
@@ -647,8 +647,8 @@ def findVMRunningResource(request, tid):
     if bfind == False:
         if amIclc() and amIcc() and amInc():
             clcobj = ecServers.objects.get(role='clc')
-            _ccip = clcobj.ip0
-            _ncip = clcobj.ip0
+            _ccip = clcobj.eip
+            _ncip = clcobj.eip
             _msg = ''
             logger.error("allinone get best node : ip = %s" % _ncip)
 
@@ -710,14 +710,14 @@ def findBuildResource(request, tid):
             for nc in ncs:
                 if nc.hypervisor == rec.hypervisor:
                     final_avail_res = get_nc_avail_res(nc.mac0)
-                    final_avail_res['xncip'] = nc.ip0
-                    final_avail_res['xccip'] = ccobj.ip0
+                    final_avail_res['xncip'] = nc.eip
+                    final_avail_res['xccip'] = ccobj.eip
                     l.add(final_avail_res)
         else:
-            ncobj = ecServers.objects.get(ccname=cc.ccname, ip0=nc_def, role='nc')
+            ncobj = ecServers.objects.get(ccname=cc.ccname, eip=nc_def, role='nc')
             final_avail_res = get_nc_avail_res(ncobj.mac0)
-            final_avail_res['xncip'] = ncobj.ip0
-            final_avail_res['xccip'] = ccobj.ip0
+            final_avail_res['xncip'] = ncobj.eip
+            final_avail_res['xccip'] = ccobj.eip
             l.add(final_avail_res)
             logger.error("final_avail_res = %s" % json.dumps(final_avail_res))
 
@@ -748,8 +748,8 @@ def findBuildResource(request, tid):
     if bfind == False:
         if amIclc() and amIcc() and amInc():
             clcobj = ecServers.objects.get(role='clc')
-            _ccip = clcobj.ip0
-            _ncip = clcobj.ip0
+            _ccip = clcobj.eip
+            _ncip = clcobj.eip
             _msg = ''
             logger.error("allinone get best node : ip = %s" % _ncip)
 
@@ -1274,8 +1274,8 @@ def walrus_mgr_view(request):
     ua_role_value = ecAuthPath.objects.get(ec_authpath_name = ua.ec_authpath_name)
 
     wobj = ecServers.objects.get(role="walrus")
-    if DoesServiceExist(wobj.ip0, 80) == "Running" :
-        sip = wobj.ip0
+    if DoesServiceExist(wobj.eip, 80) == "Running" :
+        sip = wobj.eip
     else:
         sip = wobj.eip
 
@@ -1316,8 +1316,8 @@ def cc_mgr_ccname(request, ccname):
         port = 80
     else:
         port = 8000
-    if DoesServiceExist(ccobj.ip0, port) == "Running" :
-        sip = ccobj.ip0
+    if DoesServiceExist(ccobj.eip, port) == "Running" :
+        sip = ccobj.eip
     else:
         sip = ccobj.eip
 
@@ -1997,7 +1997,7 @@ def releaseRuntimeOptionForImageBuild(_tid, _runtime_option=None):
     else:
         runtime_option = _runtime_option
 
-    ccobj       = ecServers.objects.get(ip0=tidrec.ccip, role='cc')
+    ccobj       = ecServers.objects.get(eip=tidrec.ccip, role='cc')
     ccres_info  = ecCCResources.objects.get(ccmac0=ccobj.mac0)
 
     # release CC Resource
@@ -2183,7 +2183,7 @@ def isNCNDPed(tid):
     # read nodestatus to check ndp service status
     tid_rec = ectaskTransaction.objects.get(tid=tid)
     ncip = tid_rec.ncip
-    ncobj= ecServers.objects.get(ip0=ncip, role='nc')
+    ncobj= ecServers.objects.get(eip=ncip, role='nc')
 
     mc = memcache.Client(['127.0.0.1:11211'], debug=0)
     key = str("nc#" + ncobj.mac0 + "#status")
@@ -2245,8 +2245,8 @@ def genRuntimeOptionForImageBuild(transid):
     else:
         user_vdpara = {}
 
-    ccobj       = ecServers.objects.get(ip0=ccip, role='cc')
-    ncobj       = ecServers.objects.get(ip0=ncip, role='nc')
+    ccobj       = ecServers.objects.get(eip=ccip, role='cc')
+    ncobj       = ecServers.objects.get(eip=ncip, role='nc')
 
     # 0. get vm access protocol
     runtime_option['protocol'] =  getAccessProtocol(transid)
@@ -2817,7 +2817,7 @@ def image_create_task_getvmstatus(request, srcid, dstid, insid):
     except Exception as e:
         try:
             tidrec = ectaskTransaction.objects.get(tid=_tid)
-            ncobj = ecServers.objects.get(ip0=tidrec.ncip, role='nc')
+            ncobj = ecServers.objects.get(eip=tidrec.ncip, role='nc')
             key = str("nc#" + ncobj.mac0 + "#status")
             nc_info = mc.get(key)
             nc_info = json.loads(nc_info)
@@ -4095,12 +4095,12 @@ def list_cc_servers(request):
     f_ip = request.POST['ip']
 
     if len(f_ccname) > 0 and len(f_ip) > 0:
-        recs = ecServers.objects.filter(ccname__contains=f_ccname, ip0__contains=f_ip, role='cc')
+        recs = ecServers.objects.filter(ccname__contains=f_ccname, eip__contains=f_ip, role='cc')
     else:
         if len(f_ccname) > 0:
             recs = ecServers.objects.filter(ccname__contains=f_ccname, role='cc')
         elif len(f_ip) > 0:
-            recs = ecServers.objects.filter(ip0__contains=f_ip, role='cc')
+            recs = ecServers.objects.filter(eip__contains=f_ip, role='cc')
         else:
             recs = ecServers.objects.filter(role='cc')
 
@@ -4161,7 +4161,7 @@ def list_nc_servers(request):
 
         # step 4:  now this cluster is authorized to manage
         if len(f_ip) > 0:
-            recs = ecServers.objects.filter(ip0__contains=f_ip, role='nc', ccname=ccobj.ccname)
+            recs = ecServers.objects.filter(eip__contains=f_ip, role='nc', ccname=ccobj.ccname)
         else:
             recs = ecServers.objects.filter(role='nc', ccname=ccobj.ccname)
 
@@ -4215,19 +4215,19 @@ def list_servers_all(request):
     if amIclc() and amIcc() and amInc():
         response['arch'] = 'allinone'
         clcobj = ecServers.objects.get(role='clc')
-        response['mlist']   = clcobj.ip0
+        response['mlist']   = clcobj.eip
 
     if amIclc() and amIcc() and not amInc():
         response['arch'] = 'singlecluster'
 
         clcobj = ecServers.objects.get(role='clc')
         mlist = {}
-        mlist['clc'] = clcobj.ip0
+        mlist['clc'] = clcobj.eip
         mlist['ncs'] = []
 
         ncobjs = ecServers.objects.filter(role='nc')
         for ncobj in ncobjs:
-            mlist['ncs'].append(ncobj.ip0)
+            mlist['ncs'].append(ncobj.eip)
         response['mlsit'] = mlist
 
     if amIclc() and not amIcc() and not amInc():
@@ -4235,19 +4235,19 @@ def list_servers_all(request):
 
         clcobj = ecServers.objects.get(role='clc')
         mlist = {}
-        mlist['clc'] = clcobj.ip0
+        mlist['clc'] = clcobj.eip
         mlist['ccs'] = []
 
         ccobjs = ecServers.objects.filter(role='cc')
         for ccobj in ccobjs:
             ccjson = {}
-            ccjson['ccip'] = ccobj.ip0
+            ccjson['ccip'] = ccobj.eip
             ccjson['ccname'] = ccobj.ccname
 
             ncobjs = ecServers.objects.filter(role='cc', ccname=ccobj.ccname)
             ncjson = [];
             for ncobj in ncobjs:
-                ncjson.append(ncobj.ip0)
+                ncjson.append(ncobj.eip)
             ccjson['ncs'] = ncjson
 
             mlist['ccs'].append(ccjson)
@@ -5217,7 +5217,7 @@ def list_ncs(request):
     ncs = ecServers.objects.filter(role='nc', ccname=request.POST['ccname'])
     ncsips = []
     for nc in ncs:
-        ncsips.append(nc.ip0)
+        ncsips.append(nc.eip)
 
     response = {}
     response['Result'] = 'OK'
@@ -5352,7 +5352,7 @@ def register_server(request):
                 update_server_record(request, recs[0])
             else:
                 # duplicate clc register
-                logger.error(" duplicated CLC registration from %s." % request.POST['ip0'])
+                logger.error(" duplicated CLC registration from %s." % request.POST['eip'])
         else:
             # new record
             add_new_server(request)
@@ -5364,7 +5364,7 @@ def register_server(request):
                 update_server_record(request, recs[0])
             else:
                 # duplicate clc register
-                logger.error(" duplicated Walrus registration from %s." % request.POST['ip0'])
+                logger.error(" duplicated Walrus registration from %s." % request.POST['eip'])
         else:
             # new record
             add_new_server(request)
@@ -5377,7 +5377,7 @@ def register_server(request):
                 update_server_record(request, recs[0])
             else:
                 # duplicate clc register
-                logger.error(" duplicated CC registration from %s." % request.POST['ip0'])
+                logger.error(" duplicated CC registration from %s." % request.POST['eip'])
         else:
             # new record
             logger.error('------ add_new_server')
@@ -5390,7 +5390,7 @@ def register_server(request):
                 update_server_record(request, recs[0])
             else:
                 # duplicate clc register
-                logger.error(" duplicated nc registration from %s." % request.POST['ip0'])
+                logger.error(" duplicated nc registration from %s." % request.POST['eip'])
         else:
             # new record
             add_new_server(request)
@@ -5411,6 +5411,7 @@ def get_walrus_info(request):
         'cpus':   rec.cpu_cores,
         'memory': rec.memory,
         'disk':   rec.disk,
+        'eip':    rec.eip,
         'ip0':    rec.ip0,
         'ip1':    rec.ip1,
         'ip2':    rec.ip2,

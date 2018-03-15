@@ -121,7 +121,7 @@ $(document).ready(function () {
                 $("#vm_nc").append('<option selected value="any">Any</option>');
                 for (var index = 0; index < len; index++) {
                     if ( ncs[index]['hypervisor'] == '{{ imgobj.hypervisor }}' ) {
-                        ip = ncs[index]['ip0'];
+                        ip = ncs[index]['eip'];
                         $("#vm_nc").append('<option value="' + ip + '">' + ip +'</option>');
                     }
                 }

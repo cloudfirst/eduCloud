@@ -28,6 +28,8 @@ clean:
 	rm -fr $(DAEMON_CLC) $(DAEMON_WALRUS) $(DAEMON_CC) $(DAEMON_NC)
 	rm debian/*.debhelper.log debian/*.substvars  debian/files debian/stamp* debian/compat
 	find ./nodeDaemon -name *.spec -delete
+	find ./nodeDaemon/ -name build -print0 | xargs -0 /bin/rm -fr
+	find ./nodeDaemon/ -name dist  -print0 | xargs -0 /bin/rm -fr
 	rm webconfig/serverTools/recoverVMfromCrash.spec
 	rm webconfig/piplib/3rd/luhyaapi-*.tar.gz
 	rm ../*.deb ../pip.tar
