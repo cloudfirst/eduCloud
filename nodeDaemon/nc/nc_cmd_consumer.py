@@ -29,6 +29,8 @@ logger.error("max_pboot_delay=%d" % my_pboot_delay)
 my_wait_to_kill_interval = get_desktop_res()['max_wait_to_kill_interval']*60
 logger.error("max_wait_to_kill_interval=%d seconds" % my_wait_to_kill_interval)
 
+delete_semaphor = multiprocessing.Semaphore(1)
+
 #################################################
 #  worker thread
 class prepareImageTaskThread(multiprocessing.Process):
@@ -964,55 +966,48 @@ def process_stop_cmd(tid, runtime_option):
     dstimgid = retval[1]
     insid    = retval[2]
 
-    if len(runtime_option) > 0:
-        if runtime_option['protocol'] == 'NDP':
-            cmd = "pkill -f %s" % insid
+    with delete_semaphor:
+        if len(runtime_option) > 0:
+            if runtime_option['protocol'] == 'NDP':
+                cmd = "pkill -f %s" % insid
+            else:
+                cmd = VBOX_MGR_CMD + " controlvm %s poweroff " % insid
+            out = commands.getoutput(cmd)
+            logger.error("Step 1 of 2: cmd=%s; result=%s" % (cmd, out))
+        payload = {
+                'type'      : 'taskstatus',
+                'phase'     : "editing",
+                'state'     : 'stopped',
+                'progress'  : 0,
+                'tid'       : tid,
+                'errormsg'  : '',
+                'failed'    : 0
+        }
+        ccip = getccipbyconf()
+        # process for different type instance
+        if srcimgid != dstimgid:
+            rootdir = "/storage/tmp"
         else:
-            cmd = VBOX_MGR_CMD + " controlvm %s poweroff " % insid
+            rootdir = "/storage"
+        vboxmgr = vboxWrapper(dstimgid, insid, rootdir)
+        # build/modify insid is TMPxxxxx, when stopped, do nothing else
+        if insid.find('TMP') == 0 or insid.find('PVD') == 0:
+            pass
+        # running vd   insid is VDxxxx,   when stopped, delete all except image file
+        if insid.find('VD') == 0 or insid.find('TVD') == 0:
+            # restore snapshot
+            if vboxmgr.isSnapshotExist('thomas'):
+                vboxmgr.restore_snapshot('thomas')
+                logger.error('zmq:restore snapshot thomas for %s' % insid)
+        # running vs   insid is VSxxxx,   when stopped, delete all except image file
+        if insid.find('VS') == 0:
+            # restore snapshot
+            if vboxmgr.isSnapshotExist('thomas'):
+                vboxmgr.restore_snapshot('thomas')
+                logger.error('zmq:restore snapshot thomas for %s' % insid)
 
-        out = commands.getoutput(cmd)
-        logger.error("Step 1 of 2: cmd=%s; result=%s" % (cmd, out))
-
-    payload = {
-            'type'      : 'taskstatus',
-            'phase'     : "editing",
-            'state'     : 'stopped',
-            'progress'  : 0,
-            'tid'       : tid,
-            'errormsg'  : '',
-            'failed'    : 0
-    }
-
-    ccip = getccipbyconf()
-
-    # process for different type instance
-    if srcimgid != dstimgid:
-        rootdir = "/storage/tmp"
-    else:
-        rootdir = "/storage"
-
-    vboxmgr = vboxWrapper(dstimgid, insid, rootdir)
-
-    # build/modify insid is TMPxxxxx, when stopped, do nothing else
-    if insid.find('TMP') == 0 or insid.find('PVD') == 0:
-        pass
-
-    # running vd   insid is VDxxxx,   when stopped, delete all except image file
-    if insid.find('VD') == 0 or insid.find('TVD') == 0:
-        # restore snapshot
-        if vboxmgr.isSnapshotExist('thomas'):
-            vboxmgr.restore_snapshot('thomas')
-            logger.error('zmq:restore snapshot thomas for %s' % insid)
-
-    # running vs   insid is VSxxxx,   when stopped, delete all except image file
-    if insid.find('VS') == 0:
-        # restore snapshot
-        if vboxmgr.isSnapshotExist('thomas'):
-            vboxmgr.restore_snapshot('thomas')
-            logger.error('zmq:restore snapshot thomas for %s' % insid)
-
-    logger.error("Step 2 of 2: restore snapshot of %s " % insid)
-    # safe_update_task_status(ccip, "cc", payload)
+        logger.error("Step 2 of 2: restore snapshot of %s " % insid)
+        # safe_update_task_status(ccip, "cc", payload)
 
 def process_delete_cmd(tid, runtime_option):
     logger.error("Step 1: stop the VM when delete task of %s" % tid)
@@ -1039,40 +1034,33 @@ def process_delete_cmd(tid, runtime_option):
     if srcimgid != dstimgid:
         rootdir = "/storage/tmp"
 
-    vboxmgr = vboxWrapper(dstimgid, insid, rootdir)
-
-    logger.error("Step 2: unregisterVM of %s" % tid)
-    ret = vboxmgr.unregisterVM()
-    logger.error("--- vboxmgr.unregisterVM ret=%s" % (ret))
-
-    logger.error("Step 3: deleteVMConfigFile of %s" % tid)
-    ret = vboxmgr.deleteVMConfigFile()
-    logger.error("--- vboxmgr.deleteVMConfigFile ret=%s" % (ret))
-
-    hdds = get_vm_hdds()
-    disks = []
-    if insid.find('TMP') == 0:
-        if srcimgid != dstimgid:
-            disks.append('/storage/tmp/images/%s/machine' % dstimgid)
-
-    if insid.find('VD') == 0 or insid.find('TVD') == 0 or insid.find('PVD') == 0:
-        pass
-
-    if insid.find('VS') == 0:
-        pass
-
-    for disk in disks:
-        if disk in hdds:
-            cmd = VBOX_MGR_CMD + " closemedium disk %s --delete" % disk
-            out = commands.getoutput(cmd)
-            logger.error("cmd = %s, rsult=%s", (cmd, out))
-
-        if os.path.exists(os.path.dirname(disk)):
-            shutil.rmtree(os.path.dirname(disk))
+    with delete_semaphor:
+        vboxmgr = vboxWrapper(dstimgid, insid, rootdir)
+        logger.error("Step 2: unregisterVM of %s" % tid)
+        ret = vboxmgr.unregisterVM()
+        logger.error("--- vboxmgr.unregisterVM ret=%s" % (ret))
+        logger.error("Step 3: deleteVMConfigFile of %s" % tid)
+        ret = vboxmgr.deleteVMConfigFile()
+        logger.error("--- vboxmgr.deleteVMConfigFile ret=%s" % (ret))
+        hdds = get_vm_hdds()
+        disks = []
+        if insid.find('TMP') == 0:
+            if srcimgid != dstimgid:
+                disks.append('/storage/tmp/images/%s/machine' % dstimgid)
+        if insid.find('VD') == 0 or insid.find('TVD') == 0 or insid.find('PVD') == 0:
+            pass
+        if insid.find('VS') == 0:
+            pass
+        for disk in disks:
+            if disk in hdds:
+                cmd = VBOX_MGR_CMD + " closemedium disk %s --delete" % disk
+                out = commands.getoutput(cmd)
+                logger.error("cmd = %s, rsult=%s", (cmd, out))
             if os.path.exists(os.path.dirname(disk)):
-                logger.error("%s is not really deleted." % disk)
-
-    # safe_update_task_status(ccip, "cc", payload)
+                shutil.rmtree(os.path.dirname(disk))
+                if os.path.exists(os.path.dirname(disk)):
+                    logger.error("%s is not really deleted." % disk)
+        # safe_update_task_status(ccip, "cc", payload)
 
 #################################################
 #  cmd handle function
