@@ -182,7 +182,7 @@ def getHostNetInfo():
         'mac3': '',
     }
     index = 0
-    list_of_nic = netifaces.interfaces()
+    list_of_nic = sorted(netifaces.interfaces())
 
     for nic in list_of_nic:
         if not nic.startswith('lo'):

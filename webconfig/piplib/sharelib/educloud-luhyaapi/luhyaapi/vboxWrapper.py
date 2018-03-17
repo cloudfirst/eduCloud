@@ -23,7 +23,7 @@ def get_vm_ifs():
             hd = ifs[4*x+1].strip()
             result.append(hd)
 
-    return result
+    return sorted(result)
 
 def get_vm_hdds():
     cmd = VBOX_MGR_CMD + " list hdds | grep Location"
