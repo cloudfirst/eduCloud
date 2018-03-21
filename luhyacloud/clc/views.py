@@ -6063,7 +6063,7 @@ def rvd_start(request, srcid, dstid, insid):
             logger.error("rvd_start step:3 search resource failed = %s" % _msg)
             return HttpResponse(retvalue, content_type="application/json")
         else:
-            logger.error("rvd_start step:3 search resource success ccip=%s, ncip=" % (_ccip, _ncip))
+            logger.error("rvd_start step:3 search resource success ccip=%s, ncip=%s" % (_ccip, _ncip))
             rec = ectaskTransaction(
                  tid         = _tid,
                  srcimgid    = srcid,
