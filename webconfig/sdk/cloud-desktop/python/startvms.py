@@ -192,7 +192,7 @@ def main(argv):
             worker = autoWorkerProcess(vw)
             worker.start()
             list_of_process.append(worker)
-            time.sleep(1)
+            # time.sleep(1)
 
     for w in list_of_process:
         w.join()
