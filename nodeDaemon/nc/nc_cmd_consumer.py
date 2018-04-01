@@ -21,6 +21,7 @@ def getParallNumber():
     logger.error("max_pboot_vms=%d" % pnum)
     return pnum
 
+my_vboxvmcreate = multiprocessing.Semaphore(1)
 my_semaphores = multiprocessing.Semaphore(getParallNumber())
 
 my_pboot_delay = get_desktop_res()['max_pboot_delay']
@@ -740,10 +741,10 @@ class runImageTaskThread(multiprocessing.Process):
                             ret = vboxmgr.addVRDPproperty()
                             logger.error("--- --- --- vboxmgr.addVRDPproperty for video channel, error=%s" % ret)
 
-                    # ret = vboxmgr.unregisterVM()
-                    # logger.error("--- --- --- vboxmgr.unregisterVM, error=%s" % ret)
-                    # ret = vboxmgr.registerVM()
-                    # logger.error("--- --- --- vboxmgr.registerVM, error=%s" % ret)
+                    ret = vboxmgr.unregisterVM()
+                    logger.error("--- --- --- vboxmgr.unregisterVM, error=%s" % ret)
+                    ret = vboxmgr.registerVM()
+                    logger.error("--- --- --- vboxmgr.registerVM, error=%s" % ret)
                 except Exception as e:
                     logger.error("createVM Exception error=%s" % str(e))
                     ret = vboxmgr.unregisterVM()
@@ -764,10 +765,11 @@ class runImageTaskThread(multiprocessing.Process):
     # c: d: e: f:
     def createvm(self):
         hyper = getHypervisor()
-        if hyper == 'vbox':
-            return self.vbox_createVM()
-        if hyper == 'kvm':
-            return self.kvm_createVM()
+        with my_vboxvmcreate:
+            if hyper == 'vbox':
+                return self.vbox_createVM()
+            if hyper == 'kvm':
+                return self.kvm_createVM()
 
     def vbox_runVM(self):
         flag = True
@@ -862,26 +864,26 @@ class runImageTaskThread(multiprocessing.Process):
 
     def runvm(self):
         hyper = getHypervisor()
-        if hyper == 'vbox':
-            return self.vbox_runVM()
-        if hyper == 'kvm':
-            return self.kvm_runVM()
+        with my_semaphores:
+            if hyper == 'vbox':
+                return self.vbox_runVM()
+            if hyper == 'kvm':
+                return self.kvm_runVM()
 
     def run(self):
-        with my_semaphores:
-            self.markInMemcache()
-            logger.error("runImageTaskThread start proces %s - %s " % (self.tid, str(my_semaphores)))
-            try:
-                done_1 = False
-                done_2 = False
-                if self.createvm() == True:
-                    done_1 = True
-                    if self.runvm() == True:
-                        done_2 = True
-            except Exception as e:
-                logger.error("runImageTask Exception Error Message : %s" % str(e))
+        self.markInMemcache()
+        logger.error("runImageTaskThread start proces %s - %s " % (self.tid, str(my_semaphores)))
+        try:
+            done_1 = False
+            done_2 = False
+            if self.createvm() == True:
+                done_1 = True
+                if self.runvm() == True:
+                    done_2 = True
+        except Exception as e:
+            logger.error("runImageTask Exception Error Message : %s" % str(e))
 
-            time.sleep(my_pboot_delay)
+        time.sleep(my_pboot_delay)
         logger.error("runImageTaskThread stop  proces %s - %s" % (self.tid, str(my_semaphores)))
 
 
