@@ -255,6 +255,10 @@ class prepareImageTaskThread(multiprocessing.Process):
 
         return retvalue
 
+    def isImageWithDDisk(self, imgid):
+        ddisk_file = '/storage/images/%s/data' % imgid
+        return os.path.exists(ddisk_file)
+
     def cloneImage(self, data):
         logger.error('cloneImage start for %s ... ...' % data['rsync'])
         retvalue = "OK"
@@ -285,7 +289,7 @@ class prepareImageTaskThread(multiprocessing.Process):
                 need_clone  = True
                 need_delete = True
 
-        if data['rsync'] == 'db':
+        if data['rsync'] == 'db' and self.isImageWithDDisk(self.srcimgid):
             payload['prompt'] =  locale_string['promptClone_db']
 
             if self.insid.find('TMP') == 0:
@@ -823,8 +827,6 @@ class runImageTaskThread(multiprocessing.Process):
                         # restore snapshot if exist
                         if not vboxmgr.isSnapshotExist(snapshot_name):
                             ret = vboxmgr.take_snapshot(snapshot_name)
-                        else:
-                            ret = vboxmgr.restore_snapshot(snapshot_name)
 
                 logger.error("vbox_runVM:  check whether it is LNC")
                 if isLNC():
