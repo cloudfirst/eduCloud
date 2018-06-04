@@ -4414,10 +4414,41 @@ def list_tasks(request):
     response = {}
     data = []
 
+    f_insid = str(request.POST["tinsid"])
+    f_owner = str(request.POST["owner"])
+    f_ccip  = str(request.POST["ccip"])
+    f_ncip  = str(request.POST["ncip"])
+
+    raw_sql = "select * from clc_ectasktransaction "
+    condition = ""
+
+    if len(f_insid) > 0:
+        condition = condition + " insid like '%%" + f_insid + "%%' "
+    if len(f_owner) > 0:
+        if len(condition) > 0:
+            condition = condition + " and " + " user like '%%" + f_owner + "%%' "
+        else:
+            condition = condition + " user like '%%" + f_owner + "%%' "
+    if len(f_ccip) > 0:
+        if len(condition) > 0:
+            condition = condition + " and " + " ccip like '%%" + f_ccip + "%%' "
+        else:
+            condition = condition + " ccip like '%%" + f_ccip + "%%' "
+    if len(f_ncip) > 0:
+        if len(condition) > 0:
+            condition = condition + " and " + " ncip like '%%" + f_ncip + "%%' "
+        else:
+            condition = condition + " ncip like '%%" + f_ncip + "%%' "
+
+    if len(condition) > 0:
+        raw_sql = raw_sql + " where " + condition
+
+    dataset = ectaskTransaction.objects.raw(raw_sql)
+
     ua = ecAccount.objects.get(userid=request.user)
     ua_role_value = ecAuthPath.objects.get(ec_authpath_name = ua.ec_authpath_name)
 
-    recs = ectaskTransaction.objects.all()
+    recs = dataset
     for rec in recs:
         if ua_role_value.ec_authpath_value == 'eduCloud.admin':
             pass
@@ -4443,6 +4474,8 @@ def list_tasks(request):
         jrec['user']     = rec.user
         jrec['phase']    = rec.phase
         jrec['state']    = rec.state
+        jrec['ccip']     = rec.ccip
+        jrec['ncip']     = rec.ncip
         jrec['completed']= rec.completed
         data.append(jrec)
 
