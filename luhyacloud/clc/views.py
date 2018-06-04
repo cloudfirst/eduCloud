@@ -2137,9 +2137,10 @@ def genVMDisks(tid, usage, uid):
         c['mtype']   = 'multiattach'
         disks.append(c)
 
-        d['file']    = '/storage/space/database/instances/%s/database' % ins_id
-        d['mtype']   = 'writethrough'
-        disks.append(d)
+        if isImageWithDDisk(src_imgid):
+            d['file'] = '/storage/space/database/instances/%s/database' % ins_id
+            d['mtype'] = 'writethrough'
+            disks.append(d)
 
     logger.error("--- --- leave genVMDisk")
     return disks
@@ -2334,21 +2335,26 @@ def genRuntimeOptionForImageBuild(transid):
 
     netcard2 = {}
     netcard2['nic_type'] = ostype_info.ec_nic_type
-    if ccres_info.cc_usage == 'rvd' or runtime_option['usage'] == 'desktop':
+    if runtime_option['usage'] == 'desktop':
         netcard2['nic_mac']  = randomMAC()
         netcard2['nic_ip']   = ''
         netcard2['nic_mode'] = "nat"
 
-    if ccres_info.cc_usage == 'vs' and runtime_option['usage'] == 'server':
+    if runtime_option['usage'] == 'server':
+        netcard2['nic_mac'] = randomMAC()
+        netcard2['nic_ip'] = ''
         netcard2['nic_mode'] = "bridge"
-        netcard2['nic_mac'], netcard2['nic_ip'], web_port = ethers_allocate(ccres_info.ccname, ins_id)
-        if netcard2['nic_mac'] == None:
-            releaseRuntimeOptionForImageBuild(transid, runtime_option)
-            return None, _('Need more ether resources.')
-        else:
-            runtime_option['web_ip'] = netcard2['nic_ip']
-            runtime_option['web_port'] = web_port
-            logger.error('allocate web port %s for %s' % (web_port, transid))
+
+        runtime_option['web_ip'] = ''
+        runtime_option['web_port'] = ''
+        # netcard2['nic_mac'], netcard2['nic_ip'], web_port = ethers_allocate(ccres_info.ccname, ins_id)
+        # if netcard2['nic_mac'] == None:
+        #     releaseRuntimeOptionForImageBuild(transid, runtime_option)
+        #     return None, _('Need more ether resources.')
+        # else:
+        #     runtime_option['web_ip'] = netcard2['nic_ip']
+        #     runtime_option['web_port'] = web_port
+        #     logger.error('allocate web port %s for %s' % (web_port, transid))
 
     networkcards.append(netcard2)
     runtime_option['networkcards'] = networkcards
@@ -2379,37 +2385,37 @@ def genRuntimeOptionForImageBuild(transid):
         iptables.append(ipt)
 
         # set iptable rule for web service
-        if ccres_info.cc_usage == 'vs':
+        # if ccres_info.cc_usage == 'vs':
             # allocate web ip
-            availabe_web_ips = json.loads(ccres_info.pub_ip_pool_list)
-            used_web_ips     = json.loads(ccres_info.used_pub_ip)
-
-            availabe_web_ips, userd_web_ips, new_web_ip = allocate_web_ip(availabe_web_ips, used_web_ips)
-            if new_web_ip == None:
-                runtime_option['web_ip'] = ''
-                releaseRuntimeOptionForImageBuild(transid, runtime_option)
-                return None, _('Need more Proxy Web IP resources for Cluster.')
-            else:
-                runtime_option['web_ip'] = new_web_ip
-
-                ccres_info.pub_ip_pool_list = json.dumps(availabe_web_ips)
-                ccres_info.used_pub_ip      = json.dumps(used_web_ips)
-
-                ipt['src_ip'] = runtime_option['web_ip']
-                ipt['dst_ip'] = netcard['nic_ip']
-                ipt['src_port'] = 0  # port 0 means all port
-                ipt['dst_port'] = 0
-                iptables.append(ipt)
+            # availabe_web_ips = json.loads(ccres_info.pub_ip_pool_list)
+            # used_web_ips     = json.loads(ccres_info.used_pub_ip)
+            #
+            # availabe_web_ips, userd_web_ips, new_web_ip = allocate_web_ip(availabe_web_ips, used_web_ips)
+            # if new_web_ip == None:
+            #     runtime_option['web_ip'] = ''
+            #     releaseRuntimeOptionForImageBuild(transid, runtime_option)
+            #     return None, _('Need more Proxy Web IP resources for Cluster.')
+            # else:
+            #     runtime_option['web_ip'] = new_web_ip
+            #
+            #     ccres_info.pub_ip_pool_list = json.dumps(availabe_web_ips)
+            #     ccres_info.used_pub_ip      = json.dumps(used_web_ips)
+            #
+            #     ipt['src_ip'] = runtime_option['web_ip']
+            #     ipt['dst_ip'] = netcard['nic_ip']
+            #     ipt['src_port'] = 0  # port 0 means all port
+            #     ipt['dst_port'] = 0
+            #     iptables.append(ipt)
 
     runtime_option['iptable_rules'] = iptables
 
     # 3.4 set web_accessURL and mgr_accessURL
     runtime_option['web_accessURL']     = ''
     runtime_option['ex_web_accessURL']  = ''
-    if ccres_info.cc_usage == 'rvd' or runtime_option['usage'] == 'desktop':
+    if runtime_option['usage'] == 'desktop':
         runtime_option['mgr_accessURL']     = "%s:%s" % (runtime_option['ex_ip'], runtime_option['rdp_port'])
         runtime_option['ex_mgr_accessURL']  = "%s:%s" % (runtime_option['ex_ip'],  runtime_option['rdp_port'])
-    if ccres_info.cc_usage == 'vs' and runtime_option['usage'] == 'server':
+    if runtime_option['usage'] == 'server':
         runtime_option['web_accessURL']     = 'http://%s' % runtime_option['web_ip']
         runtime_option['ex_web_accessURL']  = 'http://%s:%s' % (runtime_option['ex_ip'], runtime_option['web_port'])
         runtime_option['mgr_accessURL']     = "%s:%s" % (runtime_option['ex_ip'], runtime_option['rdp_port'])
@@ -2419,6 +2425,7 @@ def genRuntimeOptionForImageBuild(transid):
     runtime_option['run_with_snapshot'] = 1
 
     ccres_info.save()
+    logger.error('genRuntimeOptionForImageBuild result: %s' % json.dumps(runtime_option, indent=4))
     return runtime_option, ''
 
 def genIPTablesRule(fromip, toip, port):
@@ -3164,7 +3171,10 @@ def image_add_vm(request, imgid):
             ccs  = ecCCResources.objects.filter(cc_usage='vd')
     if imgobj.img_usage == 'server':
         _instanceid      = 'VS' + genHexRandom()
-        ccs  = ecCCResources.objects.filter(cc_usage='vs')
+        if is_vd_allowed_in_vscc() == True:
+            ccs  = ecCCResources.objects.filter()
+        else:
+            ccs  = ecCCResources.objects.filter(cc_usage='vs')
 
     ccs = getCCObjListbyRequestUser(request, ccs)
 
@@ -4781,6 +4791,7 @@ def create_vss(request):
             name        = request.POST['name'],
             description = request.POST['description'],
             creator     = request.user,
+            user        = request.user,
             cc_def      = request.POST['cc_def'],
             nc_def      = request.POST['nc_def'],
             cpus        = request.POST['cpus'],

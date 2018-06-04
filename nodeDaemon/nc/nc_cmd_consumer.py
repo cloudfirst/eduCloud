@@ -21,6 +21,7 @@ def getParallNumber():
     logger.error("max_pboot_vms=%d" % pnum)
     return pnum
 
+my_vboxvmcreate = multiprocessing.Semaphore(1)
 my_semaphores = multiprocessing.Semaphore(getParallNumber())
 
 my_pboot_delay = get_desktop_res()['max_pboot_delay']
@@ -254,6 +255,10 @@ class prepareImageTaskThread(multiprocessing.Process):
 
         return retvalue
 
+    def isImageWithDDisk(self, imgid):
+        ddisk_file = '/storage/images/%s/data' % imgid
+        return os.path.exists(ddisk_file)
+
     def cloneImage(self, data):
         logger.error('cloneImage start for %s ... ...' % data['rsync'])
         retvalue = "OK"
@@ -284,7 +289,7 @@ class prepareImageTaskThread(multiprocessing.Process):
                 need_clone  = True
                 need_delete = True
 
-        if data['rsync'] == 'db':
+        if data['rsync'] == 'db' and self.isImageWithDDisk(self.srcimgid):
             payload['prompt'] =  locale_string['promptClone_db']
 
             if self.insid.find('TMP') == 0:
@@ -740,10 +745,10 @@ class runImageTaskThread(multiprocessing.Process):
                             ret = vboxmgr.addVRDPproperty()
                             logger.error("--- --- --- vboxmgr.addVRDPproperty for video channel, error=%s" % ret)
 
-                    # ret = vboxmgr.unregisterVM()
-                    # logger.error("--- --- --- vboxmgr.unregisterVM, error=%s" % ret)
-                    # ret = vboxmgr.registerVM()
-                    # logger.error("--- --- --- vboxmgr.registerVM, error=%s" % ret)
+                    ret = vboxmgr.unregisterVM()
+                    logger.error("--- --- --- vboxmgr.unregisterVM, error=%s" % ret)
+                    ret = vboxmgr.registerVM()
+                    logger.error("--- --- --- vboxmgr.registerVM, error=%s" % ret)
                 except Exception as e:
                     logger.error("createVM Exception error=%s" % str(e))
                     ret = vboxmgr.unregisterVM()
@@ -764,10 +769,11 @@ class runImageTaskThread(multiprocessing.Process):
     # c: d: e: f:
     def createvm(self):
         hyper = getHypervisor()
-        if hyper == 'vbox':
-            return self.vbox_createVM()
-        if hyper == 'kvm':
-            return self.kvm_createVM()
+        with my_vboxvmcreate:
+            if hyper == 'vbox':
+                return self.vbox_createVM()
+            if hyper == 'kvm':
+                return self.kvm_createVM()
 
     def vbox_runVM(self):
         flag = True
@@ -821,8 +827,6 @@ class runImageTaskThread(multiprocessing.Process):
                         # restore snapshot if exist
                         if not vboxmgr.isSnapshotExist(snapshot_name):
                             ret = vboxmgr.take_snapshot(snapshot_name)
-                        else:
-                            ret = vboxmgr.restore_snapshot(snapshot_name)
 
                 logger.error("vbox_runVM:  check whether it is LNC")
                 if isLNC():
@@ -862,26 +866,26 @@ class runImageTaskThread(multiprocessing.Process):
 
     def runvm(self):
         hyper = getHypervisor()
-        if hyper == 'vbox':
-            return self.vbox_runVM()
-        if hyper == 'kvm':
-            return self.kvm_runVM()
+        with my_semaphores:
+            if hyper == 'vbox':
+                return self.vbox_runVM()
+            if hyper == 'kvm':
+                return self.kvm_runVM()
 
     def run(self):
-        with my_semaphores:
-            self.markInMemcache()
-            logger.error("runImageTaskThread start proces %s - %s " % (self.tid, str(my_semaphores)))
-            try:
-                done_1 = False
-                done_2 = False
-                if self.createvm() == True:
-                    done_1 = True
-                    if self.runvm() == True:
-                        done_2 = True
-            except Exception as e:
-                logger.error("runImageTask Exception Error Message : %s" % str(e))
+        self.markInMemcache()
+        logger.error("runImageTaskThread start proces %s - %s " % (self.tid, str(my_semaphores)))
+        try:
+            done_1 = False
+            done_2 = False
+            if self.createvm() == True:
+                done_1 = True
+                if self.runvm() == True:
+                    done_2 = True
+        except Exception as e:
+            logger.error("runImageTask Exception Error Message : %s" % str(e))
 
-            time.sleep(my_pboot_delay)
+        time.sleep(my_pboot_delay)
         logger.error("runImageTaskThread stop  proces %s - %s" % (self.tid, str(my_semaphores)))
 
 

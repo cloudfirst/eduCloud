@@ -288,6 +288,7 @@ class ecVSS(models.Model):
     description = models.TextField()
 
     creator     = models.CharField(max_length=100)
+    user        = models.CharField(max_length=100)
 
     cc_def      = models.CharField(max_length=100)
     nc_def      = models.CharField(max_length=100)
