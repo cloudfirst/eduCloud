@@ -77,9 +77,9 @@ function sleep(sleepTime) {
 }
 
 function submit_addvm_batch() {
-    userid = $('#userid').val();
-    id_start = $('#id_start').val();
-    id_end = $('#id_end').val();
+    userid   = $('#userid').val();
+    id_start = parseInt($('#id_start').val());
+    id_end   = parseInt($('#id_end').val());
 
     if ($('#vm_disk_c').val() == "Yes") {
         insid = "PVD";
