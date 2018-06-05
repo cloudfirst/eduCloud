@@ -37,6 +37,10 @@
 
 var taskids = [];
 
+function sleep(sleepTime) {
+    for (var start = Date.now(); Date.now() - start <= sleepTime;) {}
+}
+
 function taksids_clear() {
     taskids = [];
 }
@@ -85,8 +89,9 @@ $(document).ready(function()
   });
 
   $("#delete").click(function(){
-      for (var _tid in taskids) {
+      for (const _tid of taskids) {
           delete_a_task(_tid);
+          sleep(1000);
       }
       alert('Delete task Success! ');
       location.reload();

@@ -1,3 +1,10 @@
+educloud (4.0.10) lucid; urgency=low
+  [ Thomas Li ]
+  * add batch operation for tasks selection & deletion
+  * add batch operation for vds selection & deletion
+
+ -- Signing Key (Thomas Li) <package@educloud.com>  Tue, 5 June 2018 18:48:53 -0400
+
 educloud (4.0.9) lucid; urgency=low
   [ Thomas Li ]
   * optimized key task status transmission.

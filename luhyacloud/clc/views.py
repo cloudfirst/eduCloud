@@ -3146,7 +3146,38 @@ def getCCObjListbyRequestUser(request, ccs):
 
     return ccobj_list
 
+@login_required(login_url='/portal/admlogin')
+def image_add_vm_batch(request, imgid):
+    ua              = ecAccount.objects.get(userid=request.user)
+    ua_role_value   = ecAuthPath.objects.get(ec_authpath_name = ua.ec_authpath_name)
+    objs            = ecImages_auth.objects.filter(ecid=imgid, role_value=ua_role_value.ec_authpath_value )
 
+    if objs[0].create != True:
+        context = {
+            'pagetitle'     : _('Error Report'),
+            'error'         : _('current user not allowed to create new VM'),
+            'suggestion'    : _('Ask eduCloud.admin to assign CREATE rigth.'),
+        }
+        return render(request, 'clc/error.html', context)
+
+    imgobj = ecImages.objects.get(ecid = imgid)
+    if imgobj.img_usage != 'desktop':
+        context = {
+            'pagetitle'     : _('Error Report'),
+            'error'         : _('only desktop type vm can be created.'),
+            'suggestion'    : _('Ask eduCloud.admin to assign CREATE rigth.'),
+        }
+        return render(request, 'clc/error.html', context)
+
+    context = {
+            'pagetitle' : _("VM Create"),
+            'imgobj'    : imgobj,
+    }
+
+    return render(request, 'clc/form/adm_add_vm_batch.html', context)
+
+
+@login_required(login_url='/portal/admlogin')
 def image_add_vm(request, imgid):
     #############
     ua              = ecAccount.objects.get(userid=request.user)
@@ -4414,10 +4445,10 @@ def list_tasks(request):
     response = {}
     data = []
 
-    f_insid = str(request.POST["tinsid"])
-    f_owner = str(request.POST["owner"])
-    f_ccip  = str(request.POST["ccip"])
-    f_ncip  = str(request.POST["ncip"])
+    f_insid = request.POST["tinsid"].encode('utf8')
+    f_owner = request.POST["owner"].encode('utf8')
+    f_ccip  = request.POST["ccip"].encode('utf8')
+    f_ncip  = request.POST["ncip"].encode('utf8')
 
     raw_sql = "select * from clc_ectasktransaction "
     condition = ""
@@ -4607,10 +4638,40 @@ def list_vds(request):
     response = {}
     data = []
 
+    f_insid = request.POST["insid"].encode('utf8')
+    f_imageid  = request.POST["imageid"].encode('utf8')
+    f_name  = request.POST["name"].encode('utf8')
+    f_owner = request.POST["owner"].encode('utf8')
+
+    raw_sql = "select * from clc_ecvds "
+    condition = ""
+
+    if len(f_insid) > 0:
+        condition = condition + " insid like '%%" + f_insid + "%%' "
+    if len(f_imageid) > 0:
+        if len(condition) > 0:
+            condition = condition + " and " + " imageid like '%%" + f_owner + "%%' "
+        else:
+            condition = condition + " imageid like '%%" + f_owner + "%%' "
+    if len(f_name) > 0:
+        if len(condition) > 0:
+            condition = condition + " and " + " name like '%%" + f_name + "%%' "
+        else:
+            condition = condition + " name like '%%" + f_name + "%%' "
+    if len(f_owner) > 0:
+        if len(condition) > 0:
+            condition = condition + " and " + " user like '%%" + f_owner + "%%' "
+        else:
+            condition = condition + " user like '%%" + f_owner + "%%' "
+
+    if len(condition) > 0:
+        raw_sql = raw_sql + " where " + condition
+    dataset = ecVDS.objects.raw(raw_sql)
+
     ua = ecAccount.objects.get(userid=request.user)
     ua_role_value = ecAuthPath.objects.get(ec_authpath_name = ua.ec_authpath_name)
 
-    recs = ecVDS.objects.all()
+    recs = dataset
 
     for rec in recs:
         if ua_role_value.ec_authpath_value != 'eduCloud.admin' and rec.creator != request.user.username:
@@ -4688,6 +4749,11 @@ def update_vds(request):
 def create_vds(request):
     response = {}
     recs = ecVDS.objects.filter(insid = request.POST['insid'])
+    if request.POST.has_key('user'):
+        user = request.POST['user']
+    else:
+        user = request.user
+
     if recs.count() == 0:
         new_vm = ecVDS(
             insid       = request.POST['insid'],
@@ -4695,7 +4761,7 @@ def create_vds(request):
             name        = request.POST['name'],
             description = request.POST['description'],
             creator     = request.user,
-            user        = request.user,
+            user        = user,
             cc_def      = request.POST['cc_def'],
             nc_def      = request.POST['nc_def'],
             cpus        = request.POST['cpus'],
@@ -4718,20 +4784,23 @@ def create_vds(request):
         new_vm_auth.save()
         logger.error("create new vds record1 --- OK")
 
-        ua = ecAccount.objects.get(userid=request.user)
-        role = ecAuthPath.objects.get(ec_authpath_name = ua.ec_authpath_name)
-        if role.ec_authpath_value != 'eduCloud.admin':
-            new_vm_auth = ecVDS_auth(
-                insid   =   request.POST['insid'],
-                role_value  =   ua.ec_authpath_name,
-                read        =   True,
-                write       =   True,
-                execute     =   True,
-                create      =   True,
-                delete      =   True,
-            )
-            new_vm_auth.save()
-            logger.error("create new vds record2 --- OK")
+        try:
+            ua = ecAccount.objects.get(userid=user)
+            role = ecAuthPath.objects.get(ec_authpath_name = ua.ec_authpath_name)
+            if role.ec_authpath_value != 'eduCloud.admin':
+                new_vm_auth = ecVDS_auth(
+                    insid   =   request.POST['insid'],
+                    role_value  =   ua.ec_authpath_name,
+                    read        =   True,
+                    write       =   True,
+                    execute     =   True,
+                    create      =   True,
+                    delete      =   True,
+                )
+                new_vm_auth.save()
+                logger.error("create new vds record2 --- OK")
+        except Exception as e:
+            pass
     else:
         old_vm = ecVDS.objects.get(insid = request.POST['insid'])
         old_vm.name        = request.POST['name']

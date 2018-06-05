@@ -1,6 +1,20 @@
 {% extends "clc/jtable/template.html" %}
 {% load i18n %}
 
+{% block myfilter %}
+<div class="filtering">
+    <form>
+        <p>
+            {% trans "Instance ID" %}:<input type="text"  id="insid" />
+            {% trans "Image ID" %}:<input type="text" id="imageid" />
+            {% trans "Name" %}:<input type="text" id="name" />
+            {% trans "Owner" %}:<input type="text" id="owner" />
+           <button type="submit" id="LoadRecordsButton">{% trans "Filter" %}</button>
+        </p>
+    </form>
+</div>
+<p></p>
+{% endblock %}
 
 {% block myjs %}
 <script type="text/javascript">
@@ -12,6 +26,8 @@
 
             title: '{% trans "cloud server list" %}',
             selecting: true, //Enable selecting
+            multiselect: true, //Allow multiple selecting
+            selectingCheckboxes: true, //Show checkboxes on first column
 
             sorting: true, //Enable sorting
             defaultSorting: 'Name ASC', //Set default sorting
@@ -107,12 +123,14 @@
                     width: '10%',
                     edit: false,
                     create: false,
+                    list: false,
                 },
                 nc: {
                     title: '{% trans "Node" %}',
                     width: '10%',
                     edit: false,
                     create: false,
+                    list: false,
                 },
                 cpus: {
                     title: '{% trans "CPUs" %}',
@@ -129,9 +147,9 @@
             },
             //Register to selectionChanged event to hanlde events
             selectionChanged: function () {
+                window.parent.vdsids_clear();
                 //Get all selected rows
                 var $selectedRows = $('#myjtable').jtable('selectedRows');
-
                 if ($selectedRows.length > 0) {
                     $selectedRows.each(function () {
                         //Show selected rows
@@ -146,8 +164,23 @@
             },
         });
 
+        //Re-load records when user click 'load records' button.
+        $('#LoadRecordsButton').click(function (e) {
+            e.preventDefault();
+
+            $('#myjtable').jtable('load', {
+                insid: $("#insid").val(),
+                imageid: $("#imageid").val(),
+                name:  $("#name").val(),
+                owner:  $("#owner").val(),
+            });
+        });
+
+        //Load all records when page is first shown
+        $('#LoadRecordsButton').click();
+
         //Load student list from server
-        $('#myjtable').jtable('load');
+        //$('#myjtable').jtable('load');
     });
 
 </script>

@@ -18,11 +18,11 @@
 
     function verification() {
         if (userid.length <= 0) {
-            $('.alert-danger').text('{% trans "userid prefix can't be empty." %}');
+            $('.alert-danger').text('{% trans "userid prefix cannot be empty." %}');
             return false;
         }
         if (id_start.length <=0 ||id_end.length <= 0) {
-            $('.alert-danger').text('{% trans "userid surfix can't be empty." %}');
+            $('.alert-danger').text('{% trans "userid surfix cannot be empty." %}');
             return false;
         }
         if (isNaN(id_start) || isNaN(id_end)) {
@@ -34,7 +34,7 @@
             return false;
         }
         if (password1.length <= 0 || password2.length <= 0) {
-            $('.alert-danger').text('{% trans "password can't be empty." %}');
+            $('.alert-danger').text('{% trans "password cannot be empty." %}');
             return false;
         }
         if ( password1 != password2 ) {
