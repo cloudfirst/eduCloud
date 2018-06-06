@@ -62,7 +62,7 @@ function taskSelected(taskid) {
 function delete_a_task(tid) {
     url="/clc/api/1.0/tasks/delete";
     postdata = {
-        'tid'          :    taskid,
+        'tid'          :    tid,
     }
     $.post(url, postdata, function(data) {
         var items = [];

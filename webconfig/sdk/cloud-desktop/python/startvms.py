@@ -135,12 +135,13 @@ class autoWorkerProcess(multiprocessing.Process):
 
 def usage():
     print ""
-    print "startvms -h serverIP  -u account_prefix -n number_of_account -p password"
+    print "startvms -h serverIP  -u account_prefix  -p password [-s 0] -n number_of_account"
     print ""
     print " -h serverIP: the only IP address of educloud web server"
     print " -u account prefix, say, account auto0 has prefix auto"
-    print " -n number of account, say, 9 means auto1 to auto9"
     print " -p password, all accounts here share same password"
+    print " -s start account, default is 0 if not set"
+    print " -n number of accounts from start, say, 9 means auto0 to auto8"
     print ""
 
 def main(argv):
@@ -150,8 +151,9 @@ def main(argv):
 
     message = {}
     message['anum']  = -1
+    message['snum']  = 0
     try:
-      opts, args = getopt.getopt(argv,"h:u:p:r:n:")
+      opts, args = getopt.getopt(argv,"h:u:p:r:n:s:")
       for opt, arg in opts:
           if opt in ( "-h"):
              message['ip'] =  arg
@@ -161,6 +163,8 @@ def main(argv):
              message['anum'] = arg
           if opt in ("-p"):
               message['apw'] = arg
+          if opt in ("-s"):
+              message['snum'] = arg
     except getopt.GetoptError:
         usage()
         return
@@ -177,7 +181,9 @@ def main(argv):
         vmw.setUser(user_id, user_pw)
         list_of_vmWorkers.append(vmw)
     else:
-        for i in range(1, int(message['anum']) + 1):
+	start = int(message['snum'])
+	end   = start + int(message['anum'])
+        for i in range(start, end):
             user_id = message['aprefix'] + str(i)
             vmw = cloudDesktopWrapper()
             vmw.setHost(clc_ip, 80)
@@ -192,7 +198,7 @@ def main(argv):
             worker = autoWorkerProcess(vw)
             worker.start()
             list_of_process.append(worker)
-            # time.sleep(1)
+            time.sleep(1)
 
     for w in list_of_process:
         w.join()
