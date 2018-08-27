@@ -3,6 +3,7 @@
 {% load staticfiles %}
 
 {% block content %}
+<div id="rule_start"></div>
 <button id="mysubmit" type="submit" class="btn btn-primary">{% trans "Submit Button" %}</button>
 <button id="add"      class="btn btn-default">{% trans "Add Rule" %}</button>
 <div id="variables"   style="display: none;">{{ variables }}</div>
@@ -22,7 +23,7 @@
 <script>
     function build_a_rule(vars, rule) {
         var newdiv = $("<div>", {"class": "newrule"});
-        $("#mysubmit").before(newdiv);
+        $("#rule_start").after(newdiv);
         var options = {
            "variables" : vars,
            "rule"      : rule,
