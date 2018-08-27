@@ -172,9 +172,12 @@ VM_LIST_GROUP_ITEM = \
 NC_DETAIL_TEMPLATE = \
 '<div class="col-lg-6">' + \
     '<div class="list-group">' + \
-        '<h3>' +_("Virtual Machine Data") + '</h3>' + \
+        '<h3>' +_("Virtual Machine Data") + \
+            '<small><button type="button" id="reboot" class="pull-right btn btn-danger btn-sm">' + _("Reboot") + '</button></small>' + \
+        '</h3>' + \
         '{{vminfos}}' + \
-        '<h3>' + _("Service Data") + '</h3>' + \
+        '<h3>' + _("Service Data") + \
+        '</h3>' + \
         '<p class="list-group-item">' + \
             _("Daemon Service") + \
             '<span class="pull-right text-muted"><em>{{service_data.daemon}}</em></span>' + \
@@ -227,7 +230,7 @@ NC_DETAIL_TEMPLATE = \
 '</div>' + \
 '<div class="col-lg-6">' + \
     '<div class="list-group">' + \
-        '<div style="display:none" id="ip0"> {{host_ips.ip0}}</div>' + \
+        '<div style="display:none" id="ip0"> {{host_ips.eip}}</div>' + \
         '<div style="display:none" id="mac0">{{host_ips.mac0}}</div>' + \
         '<h3>' + _("IP Addresses") + '</h3>' + \
         '<p class="list-group-item">' + \

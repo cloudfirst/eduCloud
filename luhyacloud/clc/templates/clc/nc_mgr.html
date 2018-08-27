@@ -27,6 +27,13 @@ function add_data(ccname, mac0) {
     });
 }
 
+function reboot_nc(ccname, nc_mac, nc_ip) {
+    var ret = confirm("Are you sure to reboot this machne " + ccname + "/" + nc_ip +" ?");
+    if (ret == true) {
+        alert("nc is rebooted.");
+    }
+}
+
 function bind_click_event() {
 
     $('body').on("click", "#exip_edit", function(){
@@ -38,6 +45,14 @@ function bind_click_event() {
         mac0 = $("#mac0").text();
         edit_server_permission('cc', mac0);
     });
+
+    $('body').on("click", "#reboot", function(){
+        nc_mac0 = $("#mac0").text();
+        nc_ip0  = $("#ip0").text();
+        ccname = $('#ccname').text();
+        reboot_nc(ccname, nc_mac0, nc_ip0);
+    });
+
 }
 
 function ncSelected(ccname, mac0){
