@@ -1466,6 +1466,31 @@ def nc_mgr_mac(request, ccname, mac):
     response['data'] = htmlstr
     return HttpResponse(json.dumps(response), content_type="application/json")
 
+def nc_reboot(request):
+    ccname = request.POST['ccname']
+    nc_mac = request.POST['mac']
+    nc_ip  = request.POST['ip']
+
+    logger.error("nc_reboot: clc will reboot %s:%s" % (ccname, nc_ip))
+    rec = ecServers.objects.get(role='cc', ccname=ccname)
+
+    if DAEMON_DEBUG == True:
+        url = 'http://%s:8000/cc/nc/reboot' % rec.eip
+    else:
+        url = 'http://%s/cc/nc/reboot' % rec.eip
+    payload = {
+        'ncip': nc_ip,
+    }
+    r = requests.post(url, data=payload)
+    logger.error("url=%s ncip=%s", (url, nc_ip))
+
+    response = {}
+    response['Result'] = 'OK'
+    retvalue = json.dumps(response)
+
+    return HttpResponse(retvalue, content_type="application/json")
+
+
 @login_required(login_url='/portal/admlogin')
 def lnc_mgr_view(request):
     u = User.objects.get(username=request.user)

@@ -72,6 +72,7 @@
         var _rules     = $("#rules").text();
         if (_rules != "[]") {
             _rules = JSON.parse(_rules);
+            _rules.reverse();
             for (var i=0; i<_rules.length; i++) {
                   build_a_rule(_variables, _rules[i]);
             }

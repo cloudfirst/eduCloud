@@ -28,9 +28,26 @@ function add_data(ccname, mac0) {
 }
 
 function reboot_nc(ccname, nc_mac, nc_ip) {
-    var ret = confirm("Are you sure to reboot this machne " + ccname + "/" + nc_ip +" ?");
+    var ret = confirm("确定要重启机器 " + ccname + "/" + nc_ip +" 吗?");
     if (ret == true) {
-        alert("nc is rebooted.");
+        var url = "/clc/nc/reboot";
+        var postdata = {
+            'ccname': ccname,
+            'mac':    nc_mac,
+            'ip':     nc_ip,
+        }
+        $.post(url, postdata, function (data) {
+            var items = [];
+            $.each(data, function (key, val) {
+                items[key] = val;
+            });
+
+            if ( items['Result'] != 'OK' ) {
+                alert("发送重启命令失败，原因是:" + items['error']);
+            } else {
+                alert("已发送重启命令.");
+            }
+        });
     }
 }
 
@@ -50,7 +67,7 @@ function bind_click_event() {
         nc_mac0 = $("#mac0").text();
         nc_ip0  = $("#ip0").text();
         ccname = $('#ccname').text();
-        reboot_nc(ccname, nc_mac0, nc_ip0);
+        reboot_nc(ccname, nc_mac0, nc_ip0.trim());
     });
 
 }

@@ -1,3 +1,10 @@
+educloud (4.0.11) lucid; urgency=low
+  [ Thomas Li ]
+  * always add new rule in front of old rules. 
+  * allow reboot nc with warning prompt.
+
+ -- Signing Key (Thomas Li) <package@educloud.com>  Mon, 27  Aug 2018 21:58:53 -0400
+
 educloud (4.0.10) lucid; urgency=low
   [ Thomas Li ]
   * add batch operation for tasks selection & deletion

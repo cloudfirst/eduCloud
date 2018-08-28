@@ -61,6 +61,8 @@ urlpatterns = patterns('',
     url(r'^user/edit_password_by_admin/(?P<uid>\w+)$',          views.edit_password_by_admin,    name='edit_password_by_admin'),
     url(r'^user/activate/(?P<uid>\w+)$',                        views.activate_user,             name='activate_user'),
 
+    url(r'^nc/reboot',   views.nc_reboot,    name='nc_reboot'),
+
     # image create and modify URL
     url(r'^image/create/task/begin/(?P<srcid>\w+)$',                                                            views.image_create_task_start,                  name='image_create_task_start'),
     url(r'^image/create/task/prepare/(?P<srcid>\w+)/(?P<dstid>\w+)/(?P<insid>\w+)$',                            views.image_create_task_prepare,                name='image_create_task_prepare'),
