@@ -5469,7 +5469,7 @@ def add_new_server(request):
             cc_usage            = "rvd",
 
             rdp_port_pool_def   = "3400-5499",
-            rdp_port_pool_list  = json.dumps(SortedList(range(3400,3499)).as_list()),
+            rdp_port_pool_list  = json.dumps(SortedList(range(3400,5499)).as_list()),
             used_rdp_ports      = json.dumps([]),
 
             network_mode        = 'flat',
