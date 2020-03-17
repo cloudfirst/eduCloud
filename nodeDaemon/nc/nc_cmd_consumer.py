@@ -1107,6 +1107,10 @@ def nc_ndp_stop_handle(insid, runtime_option):
     worker.start()
     return worker
 
+def nc_reboot_handle(tid, runtime_option):
+    logger.error("nc_reboot_handle: nc will reboot itself")
+    os.system("reboot")
+
 def safe_update_task_status(ip, role, status_payload):
     retry = 0
     flag  = False
@@ -1142,6 +1146,7 @@ nc_cmd_handlers = {
     'image/submit'      : nc_image_submit_handle,
     'task/delete'       : nc_task_delete_handle,
     'ndp/stop'          : nc_ndp_stop_handle,
+    'nc/reboot'         : nc_reboot_handle,
 }
 
 class nc_cmdConsumer():

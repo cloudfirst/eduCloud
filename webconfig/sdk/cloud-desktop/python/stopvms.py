@@ -9,12 +9,13 @@ logger = getautologger()
 
 def usage():
     print ""
-    print "stopvms -h serverIP  -u account_prefix -n number_of_account -p password"
+    print "stopvms -h serverIP  -u account_prefix -p password [-s 0] -n number_of_account"
     print ""
     print " -h serverIP: the only IP address of educloud web server"
     print " -u account prefix, say, account auto0 has prefix auto"
-    print " -n number of account, say, 9 means auto1 to auto9"
     print " -p password, all accounts here share same password"
+    print " -s start account, default is 0 if not set"
+    print " -n number of accounts from start, say, 9 means auto0 to auto8"
     print ""
 
 def main(argv):
@@ -24,8 +25,9 @@ def main(argv):
 
     message = {}
     message['anum']  = -1
+    message['snum']  = 0
     try:
-      opts, args = getopt.getopt(argv,"h:u:p:r:n:")
+      opts, args = getopt.getopt(argv,"h:u:p:r:n:s:")
       for opt, arg in opts:
           if opt in ( "-h"):
              message['ip'] =  arg
@@ -35,6 +37,8 @@ def main(argv):
              message['anum'] = arg
           if opt in ("-p"):
               message['apw'] = arg
+          if opt in ("-s"):
+              message['snum'] = arg
     except getopt.GetoptError:
         usage()
         return
@@ -50,7 +54,9 @@ def main(argv):
         vmw.setUser(user_id, user_pw)
         list_of_vmWorkers.append(vmw)
     else:
-        for i in range(1, int(message['anum']) + 1):
+	start = int(message['snum'])
+	end   = start + int(message['anum'])
+        for i in range(start, end):
             user_id = message['aprefix'] + str(i)
             vmw = cloudDesktopWrapper()
             vmw.setHost(clc_ip, 80)
@@ -66,8 +72,13 @@ def main(argv):
             if len(list_vms['data']) > 0:
                 vmobj = list_vms['data'][0]
                 if len(vmobj['tid']) > 1:
-                    logger.error( "%s delete running vm %s" % (w.user_id, vmobj['tid']))
-                    w.delet_vm(vmobj)
+		    insid = vmobj['tid'].split(':')[2]
+		    if insid.find('PVD') == 0:
+			logger.error( "%s stop running vm %s" % (w.user_id, vmobj['tid']))	
+			w.stopVM(vmobj)
+		    else:
+                        logger.error( "%s delete running vm %s" % (w.user_id, vmobj['tid']))
+                        w.delet_vm(vmobj)
                 else:
                     logger.error( "%s dose not have running vm" % (w.user_id))
             else:

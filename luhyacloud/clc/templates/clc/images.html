@@ -14,6 +14,7 @@
                 {% endif %}
                 <div class="pull-right">
                     <button id="add_vm" type="button" class="btn btn-primary disabled">{% trans "Add VM" %}</button>
+                    <button id="batch_add_vm" type="button" class="btn btn-primary disabled">{% trans "批量创建虚拟机" %}</button>
                 </div>
             </div>
             <div class="panel-body">
@@ -37,6 +38,7 @@ function imageSelected(imgid){
         $('#modify').addClass('disabled');
         $('#permission').addClass('disabled');
         $('#add_vm').addClass('disabled');
+        $('#batch_add_vm').addClass('disabled');
 
         $('#imgid').html(null);
     } else {
@@ -44,6 +46,7 @@ function imageSelected(imgid){
         $('#modify').removeClass('disabled');
         $('#permission').removeClass('disabled');
         $('#add_vm').removeClass('disabled');
+        $('#batch_add_vm').removeClass('disabled');
 
         $('#imgid').html(imgid);
     }
@@ -85,6 +88,14 @@ $(document).ready(function()
         var left = ($(window).width() / 2) - (800 / 2);
         var top = ($(window).height() / 2) - (600 / 2);
         window.open(url, '', 'height=350,width=800,left=' + left + ',top=' + top);
+  });
+
+  $("#batch_add_vm").click(function(){
+        imgid=$("#imgid").text();
+        url="/clc/image/batch/addvm/" + imgid;
+        var left = ($(window).width() / 2) - (800 / 2);
+        var top = ($(window).height() / 2) - (600 / 2);
+        window.open(url, '', 'height=760,width=550,left=' + left + ',top=' + top);
   });
 });
 

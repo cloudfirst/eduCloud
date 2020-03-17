@@ -52,6 +52,9 @@
                     "operator": $(this).find(".operator").val(),
                     "value":    $(this).find(".value").val()
                 };
+                if ($(this).find(".value").attr('type') == "number") {
+                    cond["value"] = parseInt(cond["value"]);
+                }
                 var andor    = $(this).find(".andor").val();
                 if (flag == null) {
                     flag = converAndOr2AllAny(andor);
@@ -419,7 +422,7 @@
             break;
           case "numeric":
             $this.after($("<label class='errorMessage'></label>"));
-            $this.after($("<input>", {"type": "text", "class": "value numberInput", "value": param}));
+            $this.after($("<input>", {"type": "number", "class": "value numberInput", "value": param}));
             break;
           case "select":
             var select = $("<select>", {"class": "value"});

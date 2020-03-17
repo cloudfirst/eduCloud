@@ -1,6 +1,21 @@
 {% extends "clc/jtable/template.html" %}
 {% load i18n %}
 
+{% block myfilter %}
+<div class="filtering">
+    <form>
+        <p>
+            {% trans "Instance ID" %}:<input type="text"  id="tinsid" />
+            {% trans "Owner" %}:<input type="text" id="owner" />
+            {% trans "Cluster IP" %}:<input type="text" id="ccip" />
+            {% trans "Node IP" %}:<input type="text" id="ncip" />
+           <button type="submit" id="LoadRecordsButton">{% trans "Filter" %}</button>
+        </p>
+    </form>
+</div>
+<p></p>
+{% endblock %}
+
 {% block myjs %}
 <script type="text/javascript">
 
@@ -12,7 +27,8 @@
             // title: '{% trans "Tasks List',
 
             selecting: true, //Enable selecting
-            //selectingCheckboxes: true, //Show checkboxes on first column
+            multiselect: true, //Allow multiple selecting
+            selectingCheckboxes: true, //Show checkboxes on first column
 
             sorting: true, //Enable sorting
             defaultSorting: 'Name ASC', //Set default sorting
@@ -65,6 +81,16 @@
                     width: '10%',
                     edit: true,
                 },
+                ccip: {
+                    title: '{% trans "Cluster IP" %}',
+                    width: '10%',
+                    edit: false,
+                },
+                ncip: {
+                    title: '{% trans "Node IP" %}',
+                    width: '10%',
+                    edit: false,
+                },
                 completed: {
                     title: '{% trans "Completed" %}',
                     width: '10%',
@@ -74,6 +100,8 @@
             },
             //Register to selectionChanged event to hanlde events
             selectionChanged: function () {
+                window.parent.taksids_clear();
+
                 //Get all selected rows
                 var $selectedRows = $('#myjtable').jtable('selectedRows');
 
@@ -91,8 +119,23 @@
             },
         });
 
+        //Re-load records when user click 'load records' button.
+        $('#LoadRecordsButton').click(function (e) {
+            e.preventDefault();
+
+            $('#myjtable').jtable('load', {
+                tinsid: $("#tinsid").val(),
+                owner: $("#owner").val(),
+                ccip:  $("#ccip").val(),
+                ncip:  $("#ncip").val(),
+            });
+        });
+
+        //Load all records when page is first shown
+        $('#LoadRecordsButton').click();
+
         //Load student list from server
-        $('#myjtable').jtable('load');
+        //$('#myjtable').jtable('load');
     });
 
 </script>

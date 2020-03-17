@@ -20,4 +20,8 @@ SERVER_TMP_ROOT = "/storage/tmp"
 SERVER_ROOT     = "/storage"
 SNAPSHOT_NAME   = "luhyaVM"
 
+######
+## insert into clc_ectasktransaction (`tid`,`srcimgid`, `dstimgid`, `insid`,`user`, `phase`, `state`, `progress`, `ccip`, `ncip`, `mac`, `runtime_option`, `message`, `completed`) VALUES ("TID1", "srcimgid", "dstimgid", "insid", "user1", "edit", "running", 100, "ccip1", "ncpi1", "macabcde", "", "", 0);
+######
+
 

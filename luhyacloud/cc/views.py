@@ -321,3 +321,24 @@ def task_status_update(request):
 
     retvalue = json.dumps(response)
     return HttpResponse(retvalue, content_type="application/json")
+
+def nc_reboot(request):
+    logger.error("cc will reboot nc")
+    nc_ip = request.POST['ncip']
+    message = {}
+    message['type'] = "cmd"
+    message['op']   = 'nc/reboot'
+    message['tid']  = ""
+    message['runtime_option'] = ""
+    message = json.dumps(message)
+
+    logger.error("nc_reboot: cc will reboot %s" % (nc_ip))
+    zmq_send(nc_ip, message, NC_CMD_QUEUE_PORT)
+    logger.error("--- --- ---zmq: send nc reboot cmd to nc daemone sucessfully")
+
+    # return http response
+    response = {}
+    response['Result'] = 'OK'
+
+    retvalue = json.dumps(response)
+    return HttpResponse(retvalue, content_type="application/json")

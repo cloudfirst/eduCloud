@@ -23,6 +23,6 @@ urlpatterns = patterns('',
     url(r'^api/1.0/verify/clc/cc/file/ver$', views.verify_clc_cc_file_ver,             name='verify_clc_cc_file_ver'),
 
     url(r'^task/status/update$',        views.task_status_update,                 name='task_status_update'),
-
+    url(r'^nc/reboot',                  views.nc_reboot,                            name='nc_reboot'),
 
     )

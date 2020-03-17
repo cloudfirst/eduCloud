@@ -37,48 +37,53 @@
 </script>
 
 <script type="text/javascript" language="javascript">
+var vdsids = [];
+
+function sleep(sleepTime) {
+    for (var start = Date.now(); Date.now() - start <= sleepTime;) {}
+}
+
+function vdsids_clear() {
+    vdsids = [];
+}
+
 function vssSelected(insid, imageid){
     if (insid == null) {
         $('#delete').addClass('disabled');
         $('#modify').addClass('disabled');
         $('#permission').addClass('disabled');
         $('#run').addClass('disabled');
-
-
         $('#insid').html(null);
         $('#imageid').html(null);
+        vdsids = [];
     } else {
         $('#delete').removeClass('disabled');
         $('#modify').removeClass('disabled');
         $('#permission').removeClass('disabled');
         $('#run').removeClass('disabled');
-
         $('#insid').html(insid);
         $('#imageid').html(imageid);
+        vdsids.push(insid)
     }
+}
+
+function delete_a_vd(insid) {
+    url="/clc/api/1.0/vds/delete";
+    postdata = {
+        'insid'          :    insid,
+    }
+    $.post(url, postdata, function(data) {});
 }
 
 $(document).ready(function()
 {
   $("#delete").click(function(){
-        insid=$("#insid").text()
-
-        url="/clc/api/1.0/vds/delete";
-        postdata = {
-            'insid'          :    insid,
-        }
-        $.post(url, postdata, function(data) {
-            var items = [];
-            $.each(data, function (key, val) {
-                items[key] = val;
-            });
-            if (items['Result'] == "OK") {
-                alert('Delete Virtual Desktop Success! ');
-                location.reload(true);
-            } else {
-                alert( items['errormsg'] );
-            }
-        });
+      for (const _insid of vdsids) {
+          delete_a_vd(_insid);
+          sleep(1000);
+      }
+      alert('Delete VD Success! ');
+      location.reload();
   });
 
   $("#run").click(function(){

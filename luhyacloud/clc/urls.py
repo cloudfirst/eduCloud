@@ -61,6 +61,8 @@ urlpatterns = patterns('',
     url(r'^user/edit_password_by_admin/(?P<uid>\w+)$',          views.edit_password_by_admin,    name='edit_password_by_admin'),
     url(r'^user/activate/(?P<uid>\w+)$',                        views.activate_user,             name='activate_user'),
 
+    url(r'^nc/reboot',   views.nc_reboot,    name='nc_reboot'),
+
     # image create and modify URL
     url(r'^image/create/task/begin/(?P<srcid>\w+)$',                                                            views.image_create_task_start,                  name='image_create_task_start'),
     url(r'^image/create/task/prepare/(?P<srcid>\w+)/(?P<dstid>\w+)/(?P<insid>\w+)$',                            views.image_create_task_prepare,                name='image_create_task_prepare'),
@@ -84,6 +86,8 @@ urlpatterns = patterns('',
     url(r'^image/modify/task/begin/(?P<srcid>\w+)$',                                                            views.image_modify_task_start,                  name='image_modify_task_start'),
     url(r'^image/addvm/(?P<imgid>\w+)$',                                                                        views.image_add_vm,                             name='image_add_vm'),
     url(r'^image/editvm/(?P<imgid>\w+)/(?P<insid>\w+)$',                                                        views.image_edit_vm,                             name='image_edit_vm'),
+    url(r'^image/batch/addvm/(?P<imgid>\w+)$',                                                                  views.image_add_vm_batch,                       name='image_add_vm_batch'),
+
 
     url(r'^image/permission/edit/(?P<srcid>\w+)$',      views.image_permission_edit,                name='image_permission_edit'),
 

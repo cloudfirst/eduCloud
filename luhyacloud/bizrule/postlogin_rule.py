@@ -30,7 +30,8 @@ class postloginVariables(BaseVariables):
     # 0000-2400s
     @numeric_rule_variable(label="login_time_of_hour")
     def login_time_of_hour(self):
-        return int(time.strftime("%H%M"))
+        ret = time.strftime("%H%M")
+        return int(ret)
         #return 940
 
     @string_rule_variable(label="login location")

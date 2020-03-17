@@ -1,0 +1,204 @@
+{% extends "clc/form/form.html" %}
+{% load i18n %}
+
+{% block myjavascript %}
+<script type="text/javascript">
+var userid;
+var id_start;
+var id_end;
+var errormsg;
+
+function submit_new_vs(insid, user) {
+    vm_insid    = insid;
+    vm_imgid    = '{{ imgobj.ecid }}';
+    vm_name     = $('#vm_name').val();
+    vm_desc     = $('#vm_desc').val();
+    vm_cc       = 'any';
+    vm_nc       = 'any';
+    vm_cpus     = $('#vm_cpus').val();
+    vm_mems     = $('#vm_mems').val();
+
+    url = "/clc/api/1.0/vds/create";
+    postdata = {
+        'insid'          :    vm_insid,
+        'imageid'        :    vm_imgid,
+        'name'           :    vm_name,
+        'description'    :    vm_desc,
+        'cc_def'         :    vm_cc,
+        'nc_def'         :    vm_nc,
+        'cpus'           :    vm_cpus,
+        'mems'           :    vm_mems,
+        'user'           :    user,
+        'hypervisor'     :    '{{ imgobj.hypervisor }}',
+    }
+    $.post(url, postdata, function(data) {
+        var items = [];
+        $.each(data, function (key, val) {
+            items[key] = val;
+        });
+        if (items['Result'] == "OK") {
+            //alert('create vm success! ');
+        }
+    });
+}
+
+function verification() {
+    if (userid.length <= 0) {
+        $('.alert-danger').text('{% trans "userid prefix cannot be empty." %}');
+        return false;
+    }
+    if (id_start.length <=0 ||id_end.length <= 0) {
+        $('.alert-danger').text('{% trans "userid surfix cannot be empty." %}');
+        return false;
+    }
+    if (isNaN(id_start) || isNaN(id_end)) {
+        $('.alert-danger').text('{% trans "userid suffix should be positive integer." %}');
+        return false;
+    }
+    if ( parseInt(id_start) >= parseInt(id_end) ) {
+        $('.alert-danger').text('{% trans "first suffix should be less than second suffix." %}');
+        return false;
+    }
+
+    return true;
+}
+
+function randHex(len) {
+    var maxlen = 8,
+    min = Math.pow(16,Math.min(len,maxlen)-1)
+    max = Math.pow(16,Math.min(len,maxlen)) - 1,
+    n   = Math.floor( Math.random() * (max-min+1) ) + min,
+    r   = n.toString(16);
+    return r;
+}
+
+function sleep(sleepTime) {
+    for (var start = Date.now(); Date.now() - start <= sleepTime;) {}
+}
+
+function submit_addvm_batch() {
+    userid   = $('#userid').val();
+    id_start = parseInt($('#id_start').val());
+    id_end   = parseInt($('#id_end').val());
+
+    if ($('#vm_disk_c').val() == "Yes") {
+        insid = "PVD";
+    } else {
+        insid = "VD";
+    }
+
+    if (verification() == true) {
+        for (var i=id_start; i<id_end; i++) {
+            submit_new_vs(insid + randHex(8), userid + i);
+            sleep(1000);
+        }
+        $('.alert-success').css('display', 'block');
+        $('.alert-danger').css( 'display', 'none');
+        $('.btn').addClass('disabled');
+    }
+}
+
+$(document).ready(function () {
+    $("#mysubmit").click(function(){
+        submit_addvm_batch();
+    });
+    $("#myreset").click(function(){
+        location.reload();
+    });
+});
+</script>
+{% endblock %}
+
+{% block myform %}
+<div class="row">
+<div class="col-lg-12">
+<div class="panel panel-default">
+<div class="panel-heading">
+    <h2>{% trans "Batch Add New VMs" %}</h2>
+</div>
+<div class="panel-body">
+    <div class="row">
+        <div class="col-lg-6">
+            <!-- /.col-lg-6 (nested) -->
+            <div class="col-lg-6">
+                <div role="form">
+                    <div class="alert alert-success">
+                      {% trans "用户参数配置" %}
+                    </div>
+                    <div class="form-group">
+                        <label>{% trans "User ID Prefix*" %}</label>
+                        <input id="userid" class="form-control" type="text" placeholder="User ID" autofocus="" value="test">
+                    </div>
+                    <label>{% trans "User ID Suffix*" %}</label>
+                    <div class="form-group">
+                        <label class="input-inline">
+                            <input id="id_start" type="text" class="form-control" value="0">
+                        </label>
+                        <label class="input-inline"> - </label>
+                        <label class="input-inline">
+                            <input id="id_end" type="text" class="form-control" value="100">
+                        </label>
+                    </div>
+
+                    <div class="alert alert-success">
+                      {% trans "虚拟机参数配置" %}
+                    </div>
+                    <div class="form-group">
+                        <label>{% trans "Image Name" %}</label>
+                        <input class="form-control" type="text" value="{{ imgobj.name}}" disabled="">
+                    </div>
+                    <div class="form-group">
+                        <label>{% trans "VS VM Name" %}</label>
+                        <input id="vm_name" class="form-control" type="text" value="{{ vm.name }}" >
+                    </div>
+                    <div class="form-group">
+                        <label>{% trans "VS VM Description" %}</label>
+                        <input id="vm_desc" class="form-control" type="text" value="{{ vm.description }}" >
+                    </div>
+                    <div class="form-group">
+                        <label>{% trans "disk C persistent" %}</label>
+                        <select id="vm_disk_c" class="form-control">
+                            <option selected value="No">{% trans "No" %}</option>
+                            <option value="Yes">{% trans "Yes" %}</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>{% trans "Select CPUs" %}</label>
+                        <select id="vm_cpus" class="form-control">
+                            <option selected value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="4">4</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>{% trans "Select Memory(G)" %}</label>
+                        <select id="vm_mems" class="form-control">
+                            <option selected value="2">2G</option>
+                            <option value="4">4G</option>
+                            <option value="8">8G</option>
+                            <option value="16">16G</option>
+                        </select>
+                    </div>
+
+                    <button id="mysubmit" type="submit" class="btn btn-primary">{% trans "Submit Button" %}</button>
+                    <button id="myreset"  type="reset" class="btn btn-default">{% trans "Reset Button" %}</button>
+                </div>
+                <p></p>
+                <div class="alert alert-success" style="display: none">
+                      {% trans "新的虚拟机已经成功创建." %}
+                </div>
+                <div class="alert alert-danger" style="display: none">
+                      {% trans "创建虚拟机失败，再试一次。" %}
+                </div>
+        </div>
+        <!-- /.col-lg-6 (nested) -->
+    </div>
+    <!-- /.row (nested) -->
+</div>
+<!-- /.panel-body -->
+</div>
+<!-- /.panel -->
+</div>
+<!-- /.col-lg-12 -->
+</div>
+{% endblock %}
